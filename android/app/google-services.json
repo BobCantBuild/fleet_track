@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "778334362913",
+    "project_id": "fleet-track-486de",
+    "storage_bucket": "fleet-track-486de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778334362913:android:7b474652a6954ae9043260",
+        "android_client_info": {
+          "package_name": "com.example.technician_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANW4J1lcEgppzQbnmN51YCe5ISgmHlz54"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
