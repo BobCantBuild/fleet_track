@@ -1,5 +1,8 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -11,12 +14,16 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // ✅ KOTLIN DSL SYNTAX for desugaring
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        // ✅ Fix deprecated jvmTarget warning
+        freeCompilerArgs += listOf("-Xjvm-default=all")
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -41,4 +48,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // ✅ KOTLIN DSL SYNTAX for desugaring dependency
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
