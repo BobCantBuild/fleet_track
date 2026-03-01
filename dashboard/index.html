@@ -51,7 +51,9 @@
     .tc-stat{background:#1e293b;border-radius:6px;padding:0.35rem;text-align:center}
     .tc-stat span{display:block;font-size:0.82rem;font-weight:700;color:#60a5fa}
     .tc-stat small{font-size:0.62rem;color:#64748b;text-transform:uppercase}
-    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:60vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.4)}
+
+    /* Detail panel */
+    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:65vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.5)}
     #detail-panel.open{display:flex}
     #dp-header{padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     #dp-name{font-weight:700;font-size:0.95rem;color:#f1f5f9}
@@ -61,22 +63,42 @@
     #dp-body{overflow-y:auto;padding:1rem 1.25rem 1.5rem;flex:1}
     #dp-body::-webkit-scrollbar{width:4px}
     #dp-body::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
-    .punch-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem}
-    .punch-box{background:#0f172a;border-radius:12px;padding:0.9rem;text-align:center;border:1px solid #334155}
-    .punch-box .plabel{font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem;font-weight:600}
-    .punch-box .pvalue{font-size:1rem;font-weight:700}
-    .punch-box.in  .pvalue{color:#22c55e}
-    .punch-box.out .pvalue{color:#ef4444}
-    .section-title{font-size:0.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;font-weight:600;display:flex;align-items:center;gap:0.4rem}
+
+    /* Session timeline */
+    .session-timeline{position:relative;padding-left:1.5rem;margin-bottom:1.25rem}
+    .session-timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#22c55e,#ef4444,#22c55e,#ef4444)}
+    .session-node{position:relative;margin-bottom:0.5rem}
+    .session-node::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;border:2px solid #1e293b;z-index:1}
+    .session-node.punch-in::before{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
+    .session-node.punch-out::before{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,0.6)}
+    .session-node.active-now::before{background:#22c55e;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 4px rgba(34,197,94,0.4)}50%{box-shadow:0 0 14px rgba(34,197,94,0.9)}}
+    .session-box{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:0.6rem 0.85rem;display:flex;align-items:center;justify-content:space-between}
+    .session-box.in-box{border-left:3px solid #22c55e}
+    .session-box.out-box{border-left:3px solid #ef4444}
+    .session-box.active-box{border-left:3px solid #22c55e;background:#052e16}
+    .sb-type{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+    .sb-type.in{color:#22c55e}
+    .sb-type.out{color:#ef4444}
+    .sb-type.now{color:#22c55e;animation:pulse-text 1.5s infinite}
+    @keyframes pulse-text{0%,100%{opacity:1}50%{opacity:0.5}}
+    .sb-time{font-size:0.95rem;font-weight:700;color:#f1f5f9;margin-top:2px}
+    .sb-km{font-size:0.78rem;font-weight:600;color:#60a5fa}
+    .sb-dur{font-size:0.68rem;color:#64748b;margin-top:2px}
+    .session-count-badge{font-size:0.72rem;color:#64748b;margin-bottom:0.75rem;padding:0.3rem 0.75rem;background:#0f172a;border-radius:6px;display:inline-block;border:1px solid #334155}
+
+    /* Movement timeline */
+    .section-title{font-size:0.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;font-weight:600}
     .timeline{position:relative;padding-left:1.5rem}
     .timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,#3b82f6,#1e3a8a)}
-    .tl-item{position:relative;margin-bottom:0.6rem;padding:0.6rem 0.75rem;background:#0f172a;border-radius:10px;border:1px solid #334155;transition:border-color 0.2s}
+    .tl-item{position:relative;margin-bottom:0.5rem;padding:0.55rem 0.75rem;background:#0f172a;border-radius:10px;border:1px solid #334155;transition:border-color 0.2s}
     .tl-item:hover{border-color:#3b82f6}
     .tl-item::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b;box-shadow:0 0 6px rgba(59,130,246,0.5)}
-    .tl-item:first-child::before{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.5)}
+    .tl-item:first-child::before{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
     .tl-time{font-size:0.72rem;color:#94a3b8;font-weight:600}
     .tl-coords{font-size:0.78rem;color:#cbd5e1;margin-top:3px}
     .tl-km{font-size:0.72rem;color:#60a5fa;margin-top:3px;font-weight:600}
+
     .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1rem;color:#475569;text-align:center}
     .empty-state .icon{font-size:2.5rem;margin-bottom:0.75rem}
     #map-wrap{position:relative}
@@ -88,6 +110,7 @@
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header">
   <h1>🚛 Fleet Track Dashboard</h1>
   <div id="header-stats">
@@ -99,6 +122,8 @@
 </div>
 
 <div id="layout">
+
+  <!-- SIDEBAR -->
   <div id="sidebar">
     <div id="search-wrap">
       <input id="search" type="text" placeholder="🔍 Search technician..." oninput="renderSidebar()"/>
@@ -116,7 +141,7 @@
     </div>
     <div id="tech-list"></div>
 
-    <!-- Detail panel slides up inside sidebar -->
+    <!-- DETAIL PANEL -->
     <div id="detail-panel">
       <div id="dp-header">
         <div>
@@ -126,22 +151,16 @@
         <button id="dp-close" onclick="closeDetail()">✕</button>
       </div>
       <div id="dp-body">
-        <div class="punch-grid">
-          <div class="punch-box in">
-            <div class="plabel">⏱ Punch IN</div>
-            <div class="pvalue" id="dp-punch-in">--</div>
-          </div>
-          <div class="punch-box out">
-            <div class="plabel">⏹ Punch OUT</div>
-            <div class="pvalue" id="dp-punch-out">--</div>
-          </div>
-        </div>
+        <div class="section-title">⏱ Punch History</div>
+        <div id="dp-session-count" class="session-count-badge">Loading...</div>
+        <div class="session-timeline" id="dp-sessions"></div>
         <div class="section-title">📍 Movement History</div>
         <div class="timeline" id="dp-timeline"></div>
       </div>
     </div>
   </div>
 
+  <!-- MAP -->
   <div id="map-wrap">
     <div id="map"></div>
     <div id="map-overlay">
@@ -152,35 +171,49 @@
 </div>
 
 <script>
+  // ── FIREBASE ─────────────────────────────────────────────────────────────
   const firebaseConfig = {
-    apiKey: "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
-    authDomain: "fleet-track-486de.firebaseapp.com",
-    projectId: "fleet-track-486de",
-    storageBucket: "fleet-track-486de.firebasestorage.app",
+    apiKey:            "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
+    authDomain:        "fleet-track-486de.firebaseapp.com",
+    projectId:         "fleet-track-486de",
+    storageBucket:     "fleet-track-486de.firebasestorage.app",
     messagingSenderId: "778334362913",
-    appId: "1:778334362913:web:a44beb20a97af383043260"
+    appId:             "1:778334362913:web:a44beb20a97af383043260"
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  // ── STATE ────────────────────────────────────────────────────────────────
   let map, markers = {}, infoWindows = {};
   let techData = {}, franchiseFilter = 'all', statusFilter = 'all';
   let selectedTechId = null, trailUnsub = null;
 
-  const fColors = {'MFBS':'#8b5cf6','PromptCare':'#10b981','Krisma Tech':'#f59e0b'};
+  const fColors = {
+    'MFBS':       '#8b5cf6',
+    'PromptCare': '#10b981',
+    'Krisma Tech':'#f59e0b',
+  };
   const aColors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
-  const aColor  = n => fColors[n] || aColors[(n||'?').charCodeAt(0) % aColors.length];
+  const aColor  = f => fColors[f] || aColors[(f||'?').charCodeAt(0) % aColors.length];
 
-  // ── FORMAT TIME: 12hr AM/PM, no seconds ──────────────────────────────────
+  // ── HELPERS ──────────────────────────────────────────────────────────────
   function formatTime(date) {
     if (!date) return '0';
     return date.toLocaleTimeString('en-IN', {
-      hour:   '2-digit',
-      minute: '2-digit',
-      hour12: true,
+      hour: '2-digit', minute: '2-digit', hour12: true
     });
   }
-
+  function formatDate(date) {
+    if (!date) return '';
+    return date.toLocaleDateString('en-IN', {day: '2-digit', month: 'short'});
+  }
+  function duration(start, end) {
+    if (!start || !end) return '';
+    const diff = Math.floor((end - start) / 1000);
+    const h    = Math.floor(diff / 3600);
+    const m    = Math.floor((diff % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
   function timeAgo(date) {
     if (!date) return '--';
     const s = Math.floor((new Date() - date) / 1000);
@@ -195,13 +228,13 @@
       zoom: 12,
       center: {lat: 8.6, lng: 76.9},
       styles: [
-        {elementType:'geometry',            stylers:[{color:'#1a2332'}]},
-        {elementType:'labels.text.stroke',  stylers:[{color:'#242f3e'}]},
-        {elementType:'labels.text.fill',    stylers:[{color:'#746855'}]},
-        {featureType:'road',elementType:'geometry',           stylers:[{color:'#2c3e50'}]},
-        {featureType:'road',elementType:'labels.text.fill',   stylers:[{color:'#9ca5b3'}]},
-        {featureType:'water',elementType:'geometry',          stylers:[{color:'#17263c'}]},
-        {featureType:'poi',                 stylers:[{visibility:'off'}]},
+        {elementType:'geometry',           stylers:[{color:'#1a2332'}]},
+        {elementType:'labels.text.stroke', stylers:[{color:'#242f3e'}]},
+        {elementType:'labels.text.fill',   stylers:[{color:'#746855'}]},
+        {featureType:'road',elementType:'geometry',         stylers:[{color:'#2c3e50'}]},
+        {featureType:'road',elementType:'labels.text.fill', stylers:[{color:'#9ca5b3'}]},
+        {featureType:'water',elementType:'geometry',        stylers:[{color:'#17263c'}]},
+        {featureType:'poi',                stylers:[{visibility:'off'}]},
       ]
     });
     startTracking();
@@ -246,16 +279,16 @@
         <div class="empty-state">
           <div class="icon">🚛</div>
           <div>No technicians found</div>
-          <small style="margin-top:4px">Waiting for Punch IN...</small>
+          <small style="margin-top:4px;display:block">Waiting for Punch IN...</small>
         </div>`;
     }
   }
 
-  // ── BUILD CARD ───────────────────────────────────────────────────────────
+  // ── CARD ─────────────────────────────────────────────────────────────────
   function buildCard(tech, isActive) {
     const div      = document.createElement('div');
     const initials = (tech.name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-    const bg       = aColor(tech.franchise || tech.name || '?');
+    const bg       = aColor(tech.franchise);
     const km       = (tech.totalKm || 0).toFixed(1);
     const spd      = ((tech.speed  || 0) * 3.6).toFixed(0);
     const upd      = tech.updatedAt?.toDate ? timeAgo(tech.updatedAt.toDate()) : '--';
@@ -265,8 +298,8 @@
       <div class="tc-row">
         <div class="tc-avatar" style="background:${bg}">${initials}</div>
         <div class="tc-info">
-          <div class="tc-name">${tech.name || 'Unknown'}</div>
-          <div class="tc-franchise">${tech.franchise || ''}</div>
+          <div class="tc-name">${tech.name||'Unknown'}</div>
+          <div class="tc-franchise">${tech.franchise||''}</div>
         </div>
         <span class="tc-badge ${isActive?'active':'offline'}">${isActive?'● LIVE':'● OFF'}</span>
       </div>
@@ -301,119 +334,146 @@
       <span style="color:#94a3b8">${tech.franchise}</span><br>
       <span style="color:#60a5fa">🛣️ ${(tech.totalKm||0).toFixed(1)} km</span>`;
 
-    // Show panel
-    document.getElementById('dp-name').textContent      = tech.name || 'Unknown';
-    document.getElementById('dp-franchise').textContent = tech.franchise || '';
-    document.getElementById('dp-punch-in').textContent  = 'Loading...';
-    document.getElementById('dp-punch-out').textContent = 'Loading...';
-    document.getElementById('dp-timeline').innerHTML    =
-      '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">Loading history...</div>';
+    // Panel
+    document.getElementById('dp-name').textContent         = tech.name || 'Unknown';
+    document.getElementById('dp-franchise').textContent    = tech.franchise || '';
+    document.getElementById('dp-session-count').textContent = 'Loading...';
+    document.getElementById('dp-sessions').innerHTML       =
+      '<div style="color:#64748b;font-size:0.85rem">Loading sessions...</div>';
+    document.getElementById('dp-timeline').innerHTML       =
+      '<div style="color:#64748b;font-size:0.85rem">Loading history...</div>';
     document.getElementById('detail-panel').classList.add('open');
 
-    // ── Fetch session (NO orderBy → no index required) ──────────────────
+    // ── SESSIONS ───────────────────────────────────────────────────────────
     try {
       const snap = await db.collection('sessions')
         .where('techId', '==', techId)
         .get();
 
-      // Find latest session manually
-      let latest = null;
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (!latest) {
-          latest = d;
-        } else {
-          const existingTime = latest.punchIn?.toDate?.()  || new Date(0);
-          const currentTime  = d.punchIn?.toDate?.()       || new Date(0);
-          if (currentTime > existingTime) latest = d;
-        }
+      const sessions = [];
+      snap.forEach(doc => sessions.push(doc.data()));
+
+      // Sort oldest → newest (top to bottom like GitHub commits)
+      sessions.sort((a, b) => {
+        const ta = a.punchIn?.toDate?.() || new Date(0);
+        const tb = b.punchIn?.toDate?.() || new Date(0);
+        return ta - tb;
       });
 
-      if (latest) {
-        document.getElementById('dp-punch-in').textContent =
-          latest.punchIn?.toDate ? formatTime(latest.punchIn.toDate()) : '0';
-        document.getElementById('dp-punch-out').textContent =
-          latest.punchOut?.toDate ? formatTime(latest.punchOut.toDate()) : 'Still Active';
+      const container = document.getElementById('dp-sessions');
+      const countEl   = document.getElementById('dp-session-count');
+      container.innerHTML = '';
+
+      if (sessions.length === 0) {
+        countEl.textContent    = '0 sessions';
+        container.innerHTML    =
+          '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">No sessions recorded yet.</div>';
       } else {
-        document.getElementById('dp-punch-in').textContent  = '0';
-        document.getElementById('dp-punch-out').textContent = '0';
+        countEl.textContent = `${sessions.length} session${sessions.length > 1 ? 's' : ''}`;
+
+        sessions.forEach((s, i) => {
+          const pIn    = s.punchIn?.toDate?.();
+          const pOut   = s.punchOut?.toDate?.();
+          const isLast = i === sessions.length - 1;
+          const isNow  = !pOut && isLast;
+
+          // ── Punch IN node ───────────────────────────────────────────
+          const inNode = document.createElement('div');
+          inNode.className = `session-node punch-in${isNow ? ' active-now' : ''}`;
+          inNode.innerHTML = `
+            <div class="session-box in-box${isNow ? ' active-box' : ''}">
+              <div>
+                <div class="sb-type in${isNow ? ' now' : ''}">
+                  ${isNow ? '● LIVE NOW' : `▶ Punch IN — Session ${i + 1}`}
+                </div>
+                <div class="sb-time">${pIn ? formatTime(pIn) : '0'}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="sb-km">🛣️ ${(s.totalKm || 0).toFixed(1)} km</div>
+                <div class="sb-dur">${pIn ? formatDate(pIn) : ''}</div>
+              </div>
+            </div>`;
+          container.appendChild(inNode);
+
+          // ── Punch OUT node ──────────────────────────────────────────
+          const outNode = document.createElement('div');
+          outNode.className = 'session-node punch-out';
+          outNode.innerHTML = `
+            <div class="session-box out-box">
+              <div>
+                <div class="sb-type out">■ Punch OUT — Session ${i + 1}</div>
+                <div class="sb-time">${pOut ? formatTime(pOut) : isNow ? '—' : '0'}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="sb-dur">${pIn && pOut ? duration(pIn, pOut) : isNow ? 'Active' : ''}</div>
+              </div>
+            </div>`;
+          container.appendChild(outNode);
+        });
       }
     } catch (e) {
-      document.getElementById('dp-punch-in').textContent  = '0';
-      document.getElementById('dp-punch-out').textContent = '0';
+      document.getElementById('dp-sessions').innerHTML =
+        '<div style="color:#ef4444;font-size:0.85rem">Could not load sessions.</div>';
     }
 
     loadTrail(techId);
   }
 
-  // ── LOAD TRAIL ───────────────────────────────────────────────────────────
+  // ── TRAIL ────────────────────────────────────────────────────────────────
   function loadTrail(techId) {
     if (trailUnsub) { trailUnsub(); trailUnsub = null; }
-
     const timeline = document.getElementById('dp-timeline');
 
+    const render = docs => {
+      if (docs.length === 0) {
+        timeline.innerHTML =
+          '<div style="color:#64748b;font-size:0.85rem">No movement recorded yet.</div>';
+        return;
+      }
+      timeline.innerHTML = '';
+      docs.forEach(d => {
+        const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
+        const lat = d.lat?.toFixed(5) || '--';
+        const lng = d.lng?.toFixed(5) || '--';
+        const km  = (d.totalKm || 0).toFixed(2);
+        const el  = document.createElement('div');
+        el.className = 'tl-item';
+        el.innerHTML = `
+          <div class="tl-time">🕐 ${ts}</div>
+          <div class="tl-coords">📍 ${lat}°, ${lng}°</div>
+          <div class="tl-km">🛣️ ${km} km cumulative</div>`;
+        timeline.appendChild(el);
+      });
+    };
+
+    // Try ordered query first; fallback to client-side sort if index missing
     trailUnsub = db
       .collection('locations').doc(techId)
       .collection('trail')
       .orderBy('timestamp', 'desc')
       .limit(30)
-      .onSnapshot(snap => {
-        if (snap.empty) {
-          timeline.innerHTML =
-            '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">No movement recorded yet.</div>';
-          return;
+      .onSnapshot(
+        snap => {
+          const docs = [];
+          snap.forEach(d => docs.push(d.data()));
+          render(docs);
+        },
+        () => {
+          // Fallback: no index — sort client-side
+          db.collection('locations').doc(techId)
+            .collection('trail').limit(30).get()
+            .then(snap => {
+              const docs = [];
+              snap.forEach(d => docs.push(d.data()));
+              docs.sort((a, b) => {
+                const ta = a.timestamp?.toDate?.() || new Date(0);
+                const tb = b.timestamp?.toDate?.() || new Date(0);
+                return tb - ta;
+              });
+              render(docs);
+            });
         }
-        timeline.innerHTML = '';
-        snap.forEach(doc => {
-          const d   = doc.data();
-          const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
-          const lat = d.lat?.toFixed(5) || '--';
-          const lng = d.lng?.toFixed(5) || '--';
-          const km  = (d.totalKm || 0).toFixed(2);
-          const item = document.createElement('div');
-          item.className = 'tl-item';
-          item.innerHTML = `
-            <div class="tl-time">🕐 ${ts}</div>
-            <div class="tl-coords">📍 ${lat}°, ${lng}°</div>
-            <div class="tl-km">🛣️ ${km} km cumulative</div>`;
-          timeline.appendChild(item);
-        });
-      }, () => {
-        // Fallback if index missing for trail
-        db.collection('locations').doc(techId)
-          .collection('trail')
-          .limit(30)
-          .get()
-          .then(snap => {
-            if (snap.empty) {
-              timeline.innerHTML =
-                '<div style="color:#64748b;font-size:0.85rem">No movement yet.</div>';
-              return;
-            }
-            // Sort client-side
-            const docs = [];
-            snap.forEach(d => docs.push(d.data()));
-            docs.sort((a,b) => {
-              const ta = a.timestamp?.toDate?.() || new Date(0);
-              const tb = b.timestamp?.toDate?.() || new Date(0);
-              return tb - ta;
-            });
-            timeline.innerHTML = '';
-            docs.forEach(d => {
-              const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
-              const lat = d.lat?.toFixed(5) || '--';
-              const lng = d.lng?.toFixed(5) || '--';
-              const km  = (d.totalKm||0).toFixed(2);
-              const item = document.createElement('div');
-              item.className = 'tl-item';
-              item.innerHTML = `
-                <div class="tl-time">🕐 ${ts}</div>
-                <div class="tl-coords">📍 ${lat}°, ${lng}°</div>
-                <div class="tl-km">🛣️ ${km} km cumulative</div>`;
-              timeline.appendChild(item);
-            });
-          });
-      });
+      );
   }
 
   // ── CLOSE DETAIL ─────────────────────────────────────────────────────────
@@ -431,21 +491,21 @@
     Object.values(infoWindows).forEach(iw => iw.close());
     markers = {}; infoWindows = {};
 
-    const bounds    = new google.maps.LatLngBounds();
-    let   hasBounds = false;
+    const bounds = new google.maps.LatLngBounds();
+    let hasBounds = false;
 
     Object.values(techData).forEach(tech => {
       if (!tech.lat || !tech.lng) return;
       const isActive = tech.status === 'active';
-      const bg       = aColor(tech.franchise || tech.name || '?');
+      const bg       = aColor(tech.franchise);
       const initial  = (tech.name || '?').charAt(0).toUpperCase();
       const km       = (tech.totalKm || 0).toFixed(1);
 
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="42" height="50" viewBox="0 0 42 50">
-          <circle cx="21" cy="19" r="18" fill="${isActive?bg:'#6b7280'}"
+          <circle cx="21" cy="19" r="18" fill="${isActive ? bg : '#6b7280'}"
                   stroke="#ffffff" stroke-width="2.5"/>
-          <polygon points="13,35 29,35 21,48" fill="${isActive?bg:'#6b7280'}"/>
+          <polygon points="13,35 29,35 21,48" fill="${isActive ? bg : '#6b7280'}"/>
           <text x="21" y="25" text-anchor="middle" fill="white"
                 font-size="14" font-family="Arial" font-weight="bold">${initial}</text>
         </svg>`;
@@ -465,12 +525,12 @@
       const iw = new google.maps.InfoWindow({
         content: `
           <div style="font-family:sans-serif;padding:4px;min-width:160px">
-            <strong>${tech.name||'Unknown'}</strong><br>
-            <span style="color:#666;font-size:0.85rem">${tech.franchise||''}</span><br><br>
+            <strong>${tech.name || 'Unknown'}</strong><br>
+            <span style="color:#666;font-size:0.85rem">${tech.franchise || ''}</span><br><br>
             <div>📍 ${tech.lat.toFixed(4)}°, ${tech.lng.toFixed(4)}°</div>
             <div>🛣️ ${km} km</div>
-            <div>⚡ ${((tech.speed||0)*3.6).toFixed(0)} km/h</div>
-            <div style="color:${isActive?'#16a34a':'#dc2626'};font-weight:bold;margin-top:4px">
+            <div>⚡ ${((tech.speed || 0) * 3.6).toFixed(0)} km/h</div>
+            <div style="color:${isActive ? '#16a34a' : '#dc2626'};font-weight:bold;margin-top:4px">
               ${isActive ? '🟢 LIVE' : '🔴 Offline'}
             </div>
           </div>`,
@@ -491,7 +551,7 @@
     if (hasBounds && !selectedTechId) map.fitBounds(bounds);
   }
 
-  // ── HEADER STATS ─────────────────────────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────────────────────
   function updateHeader() {
     const all    = Object.values(techData);
     const active = all.filter(t => t.status === 'active');
@@ -506,15 +566,13 @@
   // ── FILTERS ──────────────────────────────────────────────────────────────
   function setFranchise(val, el) {
     franchiseFilter = val;
-    document.querySelectorAll('#franchise-tabs .ftab')
-            .forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#franchise-tabs .ftab').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     renderSidebar();
   }
   function setStatus(val, el) {
     statusFilter = val;
-    document.querySelectorAll('#status-tabs .stab')
-            .forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#status-tabs .stab').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     renderSidebar();
   }
