@@ -9,174 +9,218 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnH0XEDxgUOdxmXWtA7DDJ6wg7Qpnsumk&callback=initMap" async defer></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow:hidden}
-    #header{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.4);height:64px}
-    #header h1{font-size:1.4rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:0.5rem}
-    #header-stats{display:flex;gap:1.5rem}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;height:100vh;overflow:hidden}
+    #header{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.4);height:60px;gap:1rem;flex-wrap:nowrap}
+    #header h1{font-size:1.25rem;font-weight:700;color:#fff;white-space:nowrap}
+    /* Date mode bar */
+    #date-bar{display:flex;align-items:center;gap:0.6rem;background:rgba(0,0,0,0.25);padding:0.35rem 0.85rem;border-radius:10px;border:1px solid rgba(255,255,255,0.15)}
+    #date-bar label{font-size:0.72rem;color:#93c5fd;white-space:nowrap}
+    #date-picker{background:transparent;border:none;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;outline:none;width:130px}
+    #date-picker::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
+    #btn-today{padding:0.3rem 0.75rem;background:#22c55e;border:none;border-radius:8px;color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap}
+    #btn-today:hover{background:#16a34a}
+    #mode-badge{font-size:0.68rem;padding:0.2rem 0.55rem;border-radius:10px;font-weight:700;white-space:nowrap}
+    #mode-badge.live{background:#166534;color:#86efac}
+    #mode-badge.history{background:#7c3aed;color:#ddd6fe}
+    #header-stats{display:flex;gap:1.2rem;flex-shrink:0}
     .hstat{text-align:center}
-    .hstat span{display:block;font-size:1.4rem;font-weight:700;color:#60a5fa}
-    .hstat small{font-size:0.7rem;color:#93c5fd;text-transform:uppercase}
-    #layout{display:grid;grid-template-columns:420px 1fr;height:calc(100vh - 64px)}
+    .hstat span{display:block;font-size:1.2rem;font-weight:700;color:#60a5fa}
+    .hstat small{font-size:0.65rem;color:#93c5fd;text-transform:uppercase}
+
+    #layout{display:grid;grid-template-columns:420px 1fr;height:calc(100vh - 60px)}
     #sidebar{background:#1e293b;display:flex;flex-direction:column;border-right:1px solid #334155;overflow:hidden;position:relative}
 
-    /* Tabs row */
-    #main-tabs{display:flex;border-bottom:1px solid #334155}
-    .main-tab{flex:1;padding:0.65rem;text-align:center;font-size:0.78rem;font-weight:600;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all 0.2s}
-    .main-tab:hover{color:#94a3b8}
-    .main-tab.active{color:#60a5fa;border-bottom-color:#3b82f6;background:rgba(59,130,246,0.05)}
-    .main-tab .tab-badge{display:inline-block;background:#ef4444;color:#fff;font-size:0.6rem;padding:0.1rem 0.35rem;border-radius:10px;margin-left:4px;vertical-align:middle}
-    .main-tab .leave-badge{background:#f97316}
+    /* Main tabs */
+    #main-tabs{display:flex;border-bottom:1px solid #334155;flex-shrink:0}
+    .main-tab{flex:1;padding:0.6rem;text-align:center;font-size:0.76rem;font-weight:600;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
+    .main-tab.active{color:#60a5fa;border-bottom-color:#3b82f6;background:rgba(59,130,246,0.06)}
+    .tab-badge{display:inline-block;font-size:0.6rem;padding:0.1rem 0.35rem;border-radius:10px;margin-left:3px;vertical-align:middle}
+    .tab-badge.blue{background:#1e3a8a;color:#93c5fd}
+    .tab-badge.orange{background:#7c2d12;color:#fed7aa}
 
     /* Panels */
-    #panel-tracking{display:flex;flex-direction:column;flex:1;overflow:hidden}
-    #panel-leaves{display:none;flex-direction:column;flex:1;overflow:hidden}
+    #panel-tracking,#panel-leaves,#panel-history{display:none;flex-direction:column;flex:1;overflow:hidden}
+    #panel-tracking{display:flex}
 
-    #search-wrap{padding:0.75rem 1rem;border-bottom:1px solid #334155}
-    #search{width:100%;padding:0.5rem 0.75rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:0.85rem;outline:none}
+    #search-wrap{padding:0.65rem 0.9rem;border-bottom:1px solid #334155;flex-shrink:0}
+    #search{width:100%;padding:0.45rem 0.7rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:0.83rem;outline:none}
     #search:focus{border-color:#3b82f6}
-    #franchise-tabs{display:flex;gap:0.4rem;padding:0.75rem 1rem;border-bottom:1px solid #334155;flex-wrap:wrap}
-    .ftab{padding:0.3rem 0.7rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s;font-weight:500}
-    .ftab:hover{border-color:#3b82f6;color:#60a5fa}
+    #franchise-tabs{display:flex;gap:0.35rem;padding:0.6rem 0.9rem;border-bottom:1px solid #334155;flex-wrap:wrap;flex-shrink:0}
+    .ftab{padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s;font-weight:500}
     .ftab.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
     .ftab.mfbs.active{background:#8b5cf6;border-color:#8b5cf6}
     .ftab.promptcare.active{background:#10b981;border-color:#10b981}
     .ftab.krisma.active{background:#f59e0b;border-color:#f59e0b}
-    #status-tabs{display:flex;gap:0.4rem;padding:0.5rem 1rem;border-bottom:1px solid #334155;flex-wrap:wrap}
-    .stab{padding:0.25rem 0.6rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
+    #status-tabs{display:flex;gap:0.35rem;padding:0.45rem 0.9rem;border-bottom:1px solid #334155;flex-wrap:wrap;flex-shrink:0}
+    .stab{padding:0.2rem 0.55rem;border-radius:20px;font-size:0.7rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
     .stab.active{background:#1e3a8a;border-color:#3b82f6;color:#60a5fa}
     #tech-list{flex:1;overflow-y:auto;padding:0.5rem}
     #tech-list::-webkit-scrollbar{width:4px}
     #tech-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
 
-    /* Tech cards */
-    .tech-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.4rem;cursor:pointer;transition:all 0.2s;border-left:4px solid #334155}
+    /* Cards */
+    .tech-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:0.85rem 0.9rem;margin-bottom:0.4rem;cursor:pointer;transition:all 0.2s;border-left:4px solid #334155}
     .tech-card:hover{border-color:#3b82f6;transform:translateX(2px)}
     .tech-card.active-status{border-left-color:#22c55e}
     .tech-card.offline-status{border-left-color:#ef4444}
-    .tech-card.leave-status{border-left-color:#f97316}
+    .tech-card.leave-status{border-left-color:#f97316;cursor:default}
     .tech-card.selected{background:#1e293b;border-color:#3b82f6}
-    .tc-row{display:flex;align-items:center;gap:0.75rem}
-    .tc-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0}
+    .tc-row{display:flex;align-items:center;gap:0.7rem}
+    .tc-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0}
     .tc-info{flex:1;min-width:0}
-    .tc-name{font-weight:600;font-size:0.88rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .tc-franchise{font-size:0.72rem;color:#64748b;margin-top:1px}
-    .tc-badge{font-size:0.65rem;padding:0.15rem 0.45rem;border-radius:20px;font-weight:600;flex-shrink:0}
+    .tc-name{font-weight:600;font-size:0.86rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tc-franchise{font-size:0.7rem;color:#64748b}
+    .tc-badge{font-size:0.62rem;padding:0.12rem 0.42rem;border-radius:20px;font-weight:600;flex-shrink:0}
     .tc-badge.active{background:#166534;color:#86efac}
     .tc-badge.offline{background:#7f1d1d;color:#fca5a5}
     .tc-badge.leave{background:#7c2d12;color:#fed7aa}
-    .tc-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;margin-top:0.6rem}
-    .tc-stat{background:#1e293b;border-radius:6px;padding:0.35rem;text-align:center}
-    .tc-stat span{display:block;font-size:0.82rem;font-weight:700;color:#60a5fa}
-    .tc-stat small{font-size:0.62rem;color:#64748b;text-transform:uppercase}
+    .tc-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.35rem;margin-top:0.5rem}
+    .tc-stat{background:#1e293b;border-radius:6px;padding:0.3rem;text-align:center}
+    .tc-stat span{display:block;font-size:0.8rem;font-weight:700;color:#60a5fa}
+    .tc-stat small{font-size:0.6rem;color:#64748b;text-transform:uppercase}
+
+    /* ── HISTORY PANEL ── */
+    #hist-search-wrap{padding:0.65rem 0.9rem;border-bottom:1px solid #334155;flex-shrink:0}
+    #hist-search{width:100%;padding:0.45rem 0.7rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:0.83rem;outline:none}
+    #hist-search:focus{border-color:#7c3aed}
+    #hist-summary-bar{padding:0.5rem 0.9rem;border-bottom:1px solid #334155;display:flex;gap:0.75rem;flex-shrink:0;background:#0f172a}
+    .hist-sum-item{text-align:center;flex:1}
+    .hist-sum-item span{display:block;font-size:1rem;font-weight:700;color:#a78bfa}
+    .hist-sum-item small{font-size:0.6rem;color:#64748b;text-transform:uppercase}
+    #hist-list{flex:1;overflow-y:auto;padding:0.5rem}
+    #hist-list::-webkit-scrollbar{width:4px}
+    #hist-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+    .hist-card{background:#0f172a;border:1px solid #334155;border-left:4px solid #7c3aed;border-radius:12px;padding:0.85rem 0.9rem;margin-bottom:0.4rem;cursor:pointer;transition:all 0.2s}
+    .hist-card:hover{border-color:#7c3aed;transform:translateX(2px)}
+    .hist-card.selected{background:#1e293b;border-color:#7c3aed}
+    .hist-card.leave-hist{border-left-color:#f97316;cursor:default}
 
     /* ── LEAVE PANEL ── */
-    #leave-filters{display:flex;gap:0.4rem;padding:0.75rem 1rem;border-bottom:1px solid #334155;flex-wrap:wrap}
-    .lfil{padding:0.25rem 0.65rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
+    #leave-filters{display:flex;gap:0.35rem;padding:0.6rem 0.9rem;border-bottom:1px solid #334155;flex-wrap:wrap;flex-shrink:0}
+    .lfil{padding:0.22rem 0.6rem;border-radius:20px;font-size:0.7rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
     .lfil.active{background:#7c2d12;border-color:#f97316;color:#fed7aa}
-    #leave-list{flex:1;overflow-y:auto;padding:0.75rem}
+    #leave-list{flex:1;overflow-y:auto;padding:0.65rem}
     #leave-list::-webkit-scrollbar{width:4px}
     #leave-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
-    .leave-card{background:#0f172a;border:1px solid #334155;border-left:4px solid #f97316;border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.5rem}
-    .lc-row{display:flex;align-items:center;gap:0.75rem}
-    .lc-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;background:#f97316}
-    .lc-name{font-weight:600;font-size:0.88rem;color:#f1f5f9}
-    .lc-franchise{font-size:0.72rem;color:#64748b}
-    .lc-date{font-size:0.75rem;color:#fed7aa;font-weight:600}
-    .lc-type{font-size:0.65rem;padding:0.12rem 0.4rem;border-radius:10px;background:#451a03;color:#fb923c;font-weight:600;margin-top:4px;display:inline-block}
-    .leave-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;color:#475569;text-align:center}
+    .leave-card{background:#0f172a;border:1px solid #334155;border-left:4px solid #f97316;border-radius:12px;padding:0.85rem 0.9rem;margin-bottom:0.45rem}
+    .lc-row{display:flex;align-items:center;gap:0.7rem}
+    .lc-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;flex-shrink:0}
+    .lc-name{font-weight:600;font-size:0.86rem;color:#f1f5f9}
+    .lc-franchise{font-size:0.7rem;color:#64748b}
+    .lc-date{font-size:0.73rem;color:#fed7aa;font-weight:600}
+    .lc-type{font-size:0.62rem;padding:0.1rem 0.38rem;border-radius:10px;background:#451a03;color:#fb923c;font-weight:600;margin-top:3px;display:inline-block}
 
-    /* Detail panel */
-    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:70vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.5)}
+    /* Detail / history panel slides up */
+    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:72vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.5)}
     #detail-panel.open{display:flex}
-    #dp-header{padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    #dp-name{font-weight:700;font-size:0.95rem;color:#f1f5f9}
-    #dp-franchise{font-size:0.75rem;color:#64748b;margin-top:2px}
-    #dp-close{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.3rem;line-height:1;padding:0.2rem 0.4rem;border-radius:6px}
+    #detail-panel.history-mode{border-top-color:#7c3aed}
+    #dp-header{padding:0.9rem 1.1rem 0.65rem;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    #dp-title{font-weight:700;font-size:0.92rem;color:#f1f5f9}
+    #dp-sub{font-size:0.72rem;color:#64748b;margin-top:2px}
+    #dp-close{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.2rem;padding:0.2rem 0.4rem;border-radius:6px}
     #dp-close:hover{background:#334155;color:#f1f5f9}
-    #dp-body{overflow-y:auto;padding:1rem 1.25rem 1.5rem;flex:1}
+    #dp-body{overflow-y:auto;padding:0.9rem 1.1rem 1.5rem;flex:1}
     #dp-body::-webkit-scrollbar{width:4px}
     #dp-body::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
 
-    /* Session timeline */
-    .session-timeline{position:relative;padding-left:1.5rem;margin-bottom:1.25rem}
-    .session-timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#22c55e,#ef4444)}
-    .session-node{position:relative;margin-bottom:0.5rem}
-    .session-node::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;border:2px solid #1e293b;z-index:1}
-    .session-node.punch-in::before{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
-    .session-node.punch-out::before{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,0.6)}
+    /* Session nodes */
+    .section-title{font-size:0.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.65rem;font-weight:600;margin-top:0.4rem}
+    .session-timeline{position:relative;padding-left:1.4rem;margin-bottom:1.1rem}
+    .session-timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#22c55e,#ef4444)}
+    .session-node{position:relative;margin-bottom:0.45rem}
+    .session-node::before{content:'';position:absolute;left:-1.4rem;top:50%;transform:translateY(-50%);width:11px;height:11px;border-radius:50%;border:2px solid #1e293b;z-index:1}
+    .session-node.punch-in::before{background:#22c55e}
+    .session-node.punch-out::before{background:#ef4444}
     .session-node.active-now::before{background:#22c55e;animation:pulse 1.5s infinite}
     @keyframes pulse{0%,100%{box-shadow:0 0 4px rgba(34,197,94,0.4)}50%{box-shadow:0 0 14px rgba(34,197,94,0.9)}}
-    .session-box{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:0.6rem 0.85rem;display:flex;align-items:center;justify-content:space-between}
+    .session-box{background:#0f172a;border:1px solid #334155;border-radius:9px;padding:0.55rem 0.8rem;display:flex;align-items:center;justify-content:space-between}
     .session-box.in-box{border-left:3px solid #22c55e}
     .session-box.out-box{border-left:3px solid #ef4444}
     .session-box.active-box{border-left:3px solid #22c55e;background:#052e16}
-    .sb-type{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+    .sb-type{font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
     .sb-type.in{color:#22c55e}
     .sb-type.out{color:#ef4444}
-    .sb-type.now{color:#22c55e;animation:pulse-text 1.5s infinite}
-    @keyframes pulse-text{0%,100%{opacity:1}50%{opacity:0.5}}
-    .sb-time{font-size:0.95rem;font-weight:700;color:#f1f5f9;margin-top:2px}
-    .sb-km{font-size:0.78rem;font-weight:600;color:#60a5fa}
-    .sb-dur{font-size:0.68rem;color:#64748b;margin-top:2px}
-    .session-count-badge{font-size:0.72rem;color:#64748b;margin-bottom:0.75rem;padding:0.3rem 0.75rem;background:#0f172a;border-radius:6px;display:inline-block;border:1px solid #334155}
+    .sb-time{font-size:0.9rem;font-weight:700;color:#f1f5f9;margin-top:2px}
+    .sb-km{font-size:0.75rem;font-weight:600;color:#60a5fa}
+    .sb-dur{font-size:0.65rem;color:#64748b;margin-top:2px}
+    .session-count-badge{font-size:0.7rem;color:#64748b;margin-bottom:0.65rem;padding:0.25rem 0.65rem;background:#0f172a;border-radius:6px;display:inline-block;border:1px solid #334155}
 
-    /* Movement timeline */
-    .section-title{font-size:0.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;font-weight:600;margin-top:0.5rem}
-    .timeline{position:relative;padding-left:1.5rem}
-    .timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,#3b82f6,#1e3a8a)}
-    .tl-item{position:relative;margin-bottom:0.5rem;padding:0.6rem 0.85rem;background:#0f172a;border-radius:10px;border:1px solid #334155;transition:border-color 0.2s}
+    /* Trail */
+    .timeline{position:relative;padding-left:1.4rem}
+    .timeline::before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,#22c55e,#3b82f6,#ef4444)}
+    .tl-item{position:relative;margin-bottom:0.45rem;padding:0.55rem 0.75rem;background:#0f172a;border-radius:9px;border:1px solid #334155;transition:border-color 0.2s;cursor:pointer}
     .tl-item:hover{border-color:#3b82f6}
-    .tl-item::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b;box-shadow:0 0 6px rgba(59,130,246,0.5)}
-    .tl-item:first-child::before{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
-    .tl-item:last-child::before{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,0.5)}
-    .tl-time{font-size:0.72rem;color:#94a3b8;font-weight:600}
-    .tl-place{font-size:0.82rem;color:#f1f5f9;margin-top:3px;font-weight:500;line-height:1.3}
-    .tl-coords{font-size:0.7rem;color:#475569;margin-top:2px}
-    .tl-km{font-size:0.72rem;color:#60a5fa;margin-top:3px;font-weight:600}
-    .tl-route{display:flex;align-items:center;gap:6px;margin:0.3rem 0;padding:0.4rem 0.6rem;background:#0f172a;border:1px dashed #334155;border-radius:8px;font-size:0.75rem;color:#94a3b8}
-    .tl-route .arrow{color:#3b82f6;font-size:1rem}
+    .tl-item.highlighted{border-color:#22c55e;background:#052e16}
+    .tl-item::before{content:'';position:absolute;left:-1.4rem;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b}
+    .tl-item:first-child::before{background:#22c55e}
+    .tl-item:last-child::before{background:#ef4444}
+    .tl-time{font-size:0.7rem;color:#94a3b8;font-weight:600}
+    .tl-place{font-size:0.8rem;color:#f1f5f9;margin-top:2px;font-weight:500;line-height:1.3}
+    .tl-coords{font-size:0.67rem;color:#475569;margin-top:2px}
+    .tl-km{font-size:0.7rem;color:#60a5fa;margin-top:2px;font-weight:600}
+    .tl-route{display:flex;align-items:center;gap:6px;margin:0 0 0.65rem 0;padding:0.45rem 0.7rem;background:#0f172a;border:1px dashed #334155;border-radius:8px;font-size:0.75rem;color:#94a3b8;flex-wrap:wrap}
+    .tl-route .arrow{color:#3b82f6}
 
-    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1rem;color:#475569;text-align:center}
-    .empty-state .icon{font-size:2.5rem;margin-bottom:0.75rem}
+    /* Route replay */
+    #replay-bar{padding:0.55rem 0.9rem;border-bottom:1px solid #334155;display:flex;align-items:center;gap:0.6rem;background:#0f172a;flex-shrink:0}
+    #replay-bar button{padding:0.3rem 0.7rem;border:1px solid #334155;border-radius:8px;background:transparent;color:#94a3b8;font-size:0.75rem;cursor:pointer;transition:all 0.2s}
+    #replay-bar button:hover{border-color:#3b82f6;color:#60a5fa}
+    #replay-bar button.active-btn{background:#1e3a8a;border-color:#3b82f6;color:#60a5fa}
+    #replay-progress{flex:1;height:4px;background:#334155;border-radius:4px;overflow:hidden}
+    #replay-fill{height:100%;background:#3b82f6;border-radius:4px;transition:width 0.3s;width:0%}
+    #replay-label{font-size:0.7rem;color:#94a3b8;white-space:nowrap;min-width:40px;text-align:right}
+
+    /* Map */
     #map-wrap{position:relative}
     #map{width:100%;height:100%}
-    #map-overlay{position:absolute;top:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:12px;padding:0.75rem 1rem;border:1px solid #334155;z-index:5;min-width:180px;backdrop-filter:blur(10px)}
-    #map-overlay h3{font-size:0.7rem;color:#94a3b8;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
+    #map-overlay{position:absolute;top:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:12px;padding:0.7rem 0.9rem;border:1px solid #334155;z-index:5;min-width:175px;backdrop-filter:blur(10px)}
+    #map-overlay h3{font-size:0.68rem;color:#94a3b8;margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.05em}
+    #legend{position:absolute;bottom:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:10px;padding:0.55rem 0.85rem;border:1px solid #334155;z-index:5;backdrop-filter:blur(10px)}
+    .leg-item{display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#94a3b8;margin-bottom:2px}
+    .leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 
-    /* Legend */
-    #legend{position:absolute;bottom:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:10px;padding:0.6rem 0.9rem;border:1px solid #334155;z-index:5;backdrop-filter:blur(10px)}
-    .leg-item{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#94a3b8;margin-bottom:3px}
-    .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-
-    @media(max-width:768px){body{overflow:auto}#layout{grid-template-columns:1fr;grid-template-rows:auto 50vh}#header-stats{display:none}#detail-panel{width:100%}}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1rem;color:#475569;text-align:center}
+    .empty-icon{font-size:2.2rem;margin-bottom:0.65rem}
+    .loading-pulse{animation:loadpulse 1.2s infinite}
+    @keyframes loadpulse{0%,100%{opacity:0.4}50%{opacity:1}}
   </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div id="header">
-  <h1>🚛 Fleet Track Dashboard</h1>
+  <h1>🚛 Fleet Track</h1>
+
+  <!-- Date bar -->
+  <div id="date-bar">
+    <label>📅 Viewing:</label>
+    <input type="date" id="date-picker" onchange="onDateChange()"/>
+    <button id="btn-today" onclick="goToday()">Today</button>
+    <span id="mode-badge" class="live">● LIVE</span>
+  </div>
+
   <div id="header-stats">
     <div class="hstat"><span id="active-count">0</span><small>Active</small></div>
-    <div class="hstat"><span id="leave-count">0</span><small>On Leave</small></div>
+    <div class="hstat"><span id="leave-count">0</span><small>Leave</small></div>
     <div class="hstat"><span id="total-count">0</span><small>Total</small></div>
-    <div class="hstat"><span id="total-km">0</span><small>km Today</small></div>
+    <div class="hstat"><span id="total-km">0</span><small>km</small></div>
     <div class="hstat"><span id="last-updated">--:--</span><small>Updated</small></div>
   </div>
 </div>
 
 <div id="layout">
-
-  <!-- SIDEBAR -->
   <div id="sidebar">
 
-    <!-- Main Tab switcher -->
+    <!-- Main tabs -->
     <div id="main-tabs">
-      <div class="main-tab active" id="tab-tracking" onclick="switchMainTab('tracking')">
-        🚛 Tracking <span class="tab-badge" id="active-badge">0</span>
+      <div class="main-tab active" id="tab-tracking" onclick="switchTab('tracking')">
+        🚛 Tracking <span class="tab-badge blue" id="active-badge">0</span>
       </div>
-      <div class="main-tab" id="tab-leaves" onclick="switchMainTab('leaves')">
-        🏖 Leaves <span class="tab-badge leave-badge" id="leave-badge">0</span>
+      <div class="main-tab" id="tab-history" onclick="switchTab('history')">
+        📅 History <span class="tab-badge blue" id="hist-badge">0</span>
+      </div>
+      <div class="main-tab" id="tab-leaves" onclick="switchTab('leaves')">
+        🏖 Leaves <span class="tab-badge orange" id="leave-badge">0</span>
       </div>
     </div>
 
@@ -200,27 +244,50 @@
       <div id="tech-list"></div>
     </div>
 
+    <!-- ── HISTORY PANEL ── -->
+    <div id="panel-history">
+      <div id="hist-summary-bar">
+        <div class="hist-sum-item"><span id="h-total">0</span><small>Technicians</small></div>
+        <div class="hist-sum-item"><span id="h-worked">0</span><small>Worked</small></div>
+        <div class="hist-sum-item"><span id="h-leave">0</span><small>On Leave</small></div>
+        <div class="hist-sum-item"><span id="h-km">0</span><small>Total km</small></div>
+      </div>
+      <div id="hist-search-wrap">
+        <input id="hist-search" type="text" placeholder="🔍 Search in history..." oninput="renderHistoryList()"/>
+      </div>
+      <div id="hist-list"></div>
+    </div>
+
     <!-- ── LEAVE PANEL ── -->
     <div id="panel-leaves">
       <div id="leave-filters">
         <button class="lfil active" onclick="setLeaveFilter('today',this)">Today</button>
         <button class="lfil"        onclick="setLeaveFilter('week',this)">This Week</button>
+        <button class="lfil"        onclick="setLeaveFilter('month',this)">This Month</button>
         <button class="lfil"        onclick="setLeaveFilter('all',this)">All Time</button>
       </div>
       <div id="leave-list"></div>
     </div>
 
-    <!-- DETAIL PANEL (slides up over sidebar) -->
+    <!-- ── DETAIL PANEL (slides up) ── -->
     <div id="detail-panel">
+      <div id="replay-bar" style="display:none">
+        <button id="btn-replay" onclick="toggleReplay()">▶ Replay</button>
+        <button onclick="replaySpeed(1)" class="active-btn" id="spd1">1×</button>
+        <button onclick="replaySpeed(3)" id="spd3">3×</button>
+        <button onclick="replaySpeed(6)" id="spd6">6×</button>
+        <div id="replay-progress"><div id="replay-fill"></div></div>
+        <span id="replay-label">0%</span>
+      </div>
       <div id="dp-header">
         <div>
-          <div id="dp-name">Technician</div>
-          <div id="dp-franchise"></div>
+          <div id="dp-title">Technician</div>
+          <div id="dp-sub"></div>
         </div>
         <button id="dp-close" onclick="closeDetail()">✕</button>
       </div>
       <div id="dp-body">
-        <div class="section-title">⏱ Punch History</div>
+        <div class="section-title">⏱ Sessions</div>
         <div id="dp-session-count" class="session-count-badge">Loading...</div>
         <div class="session-timeline" id="dp-sessions"></div>
         <div class="section-title">📍 Movement History</div>
@@ -235,573 +302,916 @@
   <div id="map-wrap">
     <div id="map"></div>
     <div id="map-overlay">
-      <h3>Live Map</h3>
-      <div id="overlay-info" style="font-size:0.78rem;color:#94a3b8">Click a card to focus</div>
+      <h3>Map View</h3>
+      <div id="overlay-info" style="font-size:0.76rem;color:#94a3b8">Click a card to focus</div>
     </div>
     <div id="legend">
-      <div class="leg-item"><div class="leg-dot" style="background:#22c55e"></div> Live / Active</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div> Offline</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div> On Leave</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#22c55e"></div>Live / Active</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Offline</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div>On Leave</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#7c3aed"></div>History Route</div>
     </div>
   </div>
 </div>
 
 <script>
-  // ── FIREBASE ──────────────────────────────────────────────────────────────
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
-    authDomain:        "fleet-track-486de.firebaseapp.com",
-    projectId:         "fleet-track-486de",
-    storageBucket:     "fleet-track-486de.firebasestorage.app",
-    messagingSenderId: "778334362913",
-    appId:             "1:778334362913:web:a44beb20a97af383043260"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+// ── FIREBASE ────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
+  authDomain:        "fleet-track-486de.firebaseapp.com",
+  projectId:         "fleet-track-486de",
+  storageBucket:     "fleet-track-486de.firebasestorage.app",
+  messagingSenderId: "778334362913",
+  appId:             "1:778334362913:web:a44beb20a97af383043260"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  // ── STATE ─────────────────────────────────────────────────────────────────
-  let map, geocoder, markers = {}, infoWindows = {};
-  let techData = {}, leaveData = [];
-  let franchiseFilter = 'all', statusFilter = 'all', leaveFilter = 'today';
-  let selectedTechId = null, trailUnsub = null, leavesUnsub = null;
-  let activeMainTab = 'tracking';
+// ── STATE ───────────────────────────────────────────────────────────────────
+let map, geocoder;
+let markers = {}, infoWindows = {};
+let routePolyline = null, replayMarker = null;
+let replayTimer = null, replayIndex = 0, replayPoints = [], replaySpeedMult = 1;
+let replayRunning = false;
 
-  // Geocode cache — avoid repeat API calls for same coords
-  const geocodeCache = {};
+let techData = {}, leaveData = [], historyData = {};
+let franchiseFilter = 'all', statusFilter = 'all', leaveFilter = 'today';
+let selectedTechId = null, activeTab = 'tracking';
+let trailUnsub = null, liveUnsub = null, leavesUnsub = null;
+let isHistoryMode = false;
+let selectedDate = new Date();
 
-  const fColors = {
-    'MFBS':       '#8b5cf6',
-    'PromptCare': '#10b981',
-    'Krisma Tech':'#f59e0b',
-  };
-  const aColors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
-  const aColor  = f => fColors[f] || aColors[(f||'?').charCodeAt(0) % aColors.length];
+const geocodeCache = {};
+const fColors = {
+  'MFBS':'#8b5cf6','PromptCare':'#10b981','Krisma Tech':'#f59e0b'
+};
+const aColors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
+const aColor  = f => fColors[f] || aColors[(f||'?').charCodeAt(0) % aColors.length];
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
-  function formatTime(date) {
-    if (!date) return '--';
-    return date.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
-  }
-  function formatDate(date) {
-    if (!date) return '';
-    return date.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
-  }
-  function duration(start, end) {
-    if (!start || !end) return '';
-    const diff = Math.floor((end - start) / 1000);
-    const h    = Math.floor(diff / 3600);
-    const m    = Math.floor((diff % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
-  function timeAgo(date) {
-    if (!date) return '--';
-    const s = Math.floor((new Date() - date) / 1000);
-    if (s < 60)   return s + 's';
-    if (s < 3600) return Math.floor(s / 60) + 'm';
-    return Math.floor(s / 3600) + 'h';
-  }
-  function todayStr() {
-    const n = new Date();
-    return `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()}`;
-  }
+// ── HELPERS ─────────────────────────────────────────────────────────────────
+const fmt  = d => d?.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}) || '--';
+const fmtD = d => d?.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) || '--';
+function dur(a,b){
+  if(!a||!b) return '';
+  const s=Math.floor((b-a)/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
+  return h>0?`${h}h ${m}m`:`${m}m`;
+}
+function ago(d){
+  if(!d) return '--';
+  const s=Math.floor((new Date()-d)/1000);
+  return s<60?s+'s':s<3600?Math.floor(s/60)+'m':Math.floor(s/3600)+'h';
+}
+function todayStr(){
+  const n=new Date();
+  return `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()}`;
+}
+function dateStr(d){
+  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+function dayBounds(date){
+  const s=new Date(date); s.setHours(0,0,0,0);
+  const e=new Date(date); e.setHours(23,59,59,999);
+  return {start:s, end:e};
+}
+function isToday(date){
+  const t=new Date();
+  return date.getDate()===t.getDate()&&date.getMonth()===t.getMonth()&&date.getFullYear()===t.getFullYear();
+}
 
-  // ── REVERSE GEOCODE (with cache) ──────────────────────────────────────────
-  function reverseGeocode(lat, lng) {
-    return new Promise(resolve => {
-      const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
-      if (geocodeCache[key]) { resolve(geocodeCache[key]); return; }
-      if (!geocoder)         { resolve(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`); return; }
-
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          // Extract short readable name: locality + sublocality
-          const comps  = results[0].address_components;
-          const sub    = comps.find(c => c.types.includes('sublocality_level_1'))?.short_name;
-          const local  = comps.find(c => c.types.includes('locality'))?.short_name;
-          const area   = comps.find(c => c.types.includes('administrative_area_level_2'))?.short_name;
-          const place  = sub || local || area || results[0].formatted_address.split(',')[0];
-          const city   = local || area || '';
-          const label  = city && city !== place ? `${place}, ${city}` : place;
-          geocodeCache[key] = label;
-          resolve(label);
-        } else {
-          const fallback = `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
-          resolve(fallback);
-        }
-      });
+// ── REVERSE GEOCODE ─────────────────────────────────────────────────────────
+function reverseGeocode(lat,lng){
+  return new Promise(resolve=>{
+    const key=`${lat.toFixed(4)},${lng.toFixed(4)}`;
+    if(geocodeCache[key]){resolve(geocodeCache[key]);return;}
+    if(!geocoder){resolve(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);return;}
+    geocoder.geocode({location:{lat,lng}},(results,status)=>{
+      if(status==='OK'&&results[0]){
+        const c=results[0].address_components;
+        const sub  =c.find(x=>x.types.includes('sublocality_level_1'))?.short_name;
+        const local=c.find(x=>x.types.includes('locality'))?.short_name;
+        const area =c.find(x=>x.types.includes('administrative_area_level_2'))?.short_name;
+        const place=sub||local||area||results[0].formatted_address.split(',')[0];
+        const city =local||area||'';
+        const label=city&&city!==place?`${place}, ${city}`:place;
+        geocodeCache[key]=label;
+        resolve(label);
+      } else {
+        resolve(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);
+      }
     });
-  }
+  });
+}
 
-  // ── MAP INIT ──────────────────────────────────────────────────────────────
-  function initMap() {
-    map      = new google.maps.Map(document.getElementById('map'), {
-      zoom:   12,
-      center: {lat: 8.6, lng: 76.9},
-      styles: [
-        {elementType:'geometry',           stylers:[{color:'#1a2332'}]},
-        {elementType:'labels.text.stroke', stylers:[{color:'#242f3e'}]},
-        {elementType:'labels.text.fill',   stylers:[{color:'#746855'}]},
-        {featureType:'road',elementType:'geometry',         stylers:[{color:'#2c3e50'}]},
-        {featureType:'road',elementType:'labels.text.fill', stylers:[{color:'#9ca5b3'}]},
-        {featureType:'water',elementType:'geometry',        stylers:[{color:'#17263c'}]},
-        {featureType:'poi',                stylers:[{visibility:'off'}]},
-      ]
+// ── MAP INIT ─────────────────────────────────────────────────────────────────
+function initMap(){
+  map=new google.maps.Map(document.getElementById('map'),{
+    zoom:12, center:{lat:8.6,lng:76.9},
+    styles:[
+      {elementType:'geometry',stylers:[{color:'#1a2332'}]},
+      {elementType:'labels.text.stroke',stylers:[{color:'#242f3e'}]},
+      {elementType:'labels.text.fill',stylers:[{color:'#746855'}]},
+      {featureType:'road',elementType:'geometry',stylers:[{color:'#2c3e50'}]},
+      {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9ca5b3'}]},
+      {featureType:'water',elementType:'geometry',stylers:[{color:'#17263c'}]},
+      {featureType:'poi',stylers:[{visibility:'off'}]},
+    ]
+  });
+  geocoder=new google.maps.Geocoder();
+
+  // Set date picker to today
+  const today=new Date();
+  document.getElementById('date-picker').value=today.toISOString().split('T')[0];
+  document.getElementById('date-picker').max=today.toISOString().split('T')[0];
+
+  startLiveTracking();
+  startLeavesListener();
+}
+
+// ── DATE CHANGE ──────────────────────────────────────────────────────────────
+function onDateChange(){
+  const val=document.getElementById('date-picker').value;
+  if(!val) return;
+  selectedDate=new Date(val+'T00:00:00');
+  if(isToday(selectedDate)){
+    goToday(); return;
+  }
+  // Switch to history mode
+  isHistoryMode=true;
+  document.getElementById('mode-badge').textContent='◈ HISTORY';
+  document.getElementById('mode-badge').className='mode-badge history';
+  // Stop live listener
+  if(liveUnsub){liveUnsub();liveUnsub=null;}
+  closeDetail();
+  clearMapMarkers();
+  // Auto-switch to history tab
+  switchTab('history');
+  loadHistoryForDate(selectedDate);
+}
+
+function goToday(){
+  isHistoryMode=false;
+  selectedDate=new Date();
+  document.getElementById('date-picker').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mode-badge').textContent='● LIVE';
+  document.getElementById('mode-badge').className='mode-badge live';
+  closeDetail();
+  clearRoute();
+  switchTab('tracking');
+  startLiveTracking();
+}
+
+// ── LIVE TRACKING ────────────────────────────────────────────────────────────
+function startLiveTracking(){
+  if(liveUnsub) return; // already listening
+  liveUnsub=db.collection('locations').onSnapshot(snap=>{
+    techData={};
+    snap.forEach(doc=>{techData[doc.id]={id:doc.id,...doc.data()};});
+    renderSidebar();
+    renderMarkers();
+    updateHeader();
+  });
+}
+
+// ── LOAD HISTORY FOR DATE ────────────────────────────────────────────────────
+async function loadHistoryForDate(date){
+  historyData={};
+  document.getElementById('hist-list').innerHTML=
+    '<div class="empty-state"><div class="loading-pulse" style="font-size:1.5rem">⏳</div><div style="margin-top:8px;color:#64748b">Loading history...</div></div>';
+
+  const {start,end}=dayBounds(date);
+  const startTs=firebase.firestore.Timestamp.fromDate(start);
+  const endTs  =firebase.firestore.Timestamp.fromDate(end);
+
+  try {
+    // ── Query sessions for this date ─────────────────────────────────────
+    const sessSnap=await db.collection('sessions')
+      .where('punchIn','>=',startTs)
+      .where('punchIn','<=',endTs)
+      .get();
+
+    // Group sessions by techId
+    const byTech={};
+    sessSnap.forEach(doc=>{
+      const d={id:doc.id,...doc.data()};
+      if(!byTech[d.techId]) byTech[d.techId]={
+        techId:d.techId, name:d.name, franchise:d.franchise,
+        sessions:[], totalKm:0, onLeave:false
+      };
+      byTech[d.techId].sessions.push(d);
+      byTech[d.techId].totalKm+=(d.totalKm||0);
     });
-    geocoder = new google.maps.Geocoder();
-    startTracking();
-    startLeavesListener();
-  }
 
-  // ── LIVE LOCATION LISTENER ────────────────────────────────────────────────
-  function startTracking() {
-    db.collection('locations').onSnapshot(snap => {
-      techData = {};
-      snap.forEach(doc => { techData[doc.id] = {id: doc.id, ...doc.data()}; });
-      renderSidebar();
-      renderMarkers();
-      updateHeader();
-    });
-  }
-
-  // ── LEAVES LISTENER ───────────────────────────────────────────────────────
-  function startLeavesListener() {
-    if (leavesUnsub) leavesUnsub();
-    leavesUnsub = db.collection('leaves')
-      .orderBy('date', 'desc')
-      .limit(200)
-      .onSnapshot(snap => {
-        leaveData = [];
-        snap.forEach(doc => leaveData.push({id: doc.id, ...doc.data()}));
-        updateHeader();
-        if (activeMainTab === 'leaves') renderLeavesPanel();
-        // Update leave badge
-        const todayLeaves = leaveData.filter(l => l.dateStr === todayStr()).length;
-        document.getElementById('leave-badge').textContent = todayLeaves;
-      });
-  }
-
-  // ── MAIN TAB SWITCH ───────────────────────────────────────────────────────
-  function switchMainTab(tab) {
-    activeMainTab = tab;
-    document.getElementById('tab-tracking').classList.toggle('active', tab === 'tracking');
-    document.getElementById('tab-leaves').classList.toggle('active', tab === 'leaves');
-    document.getElementById('panel-tracking').style.display = tab === 'tracking' ? 'flex' : 'none';
-    document.getElementById('panel-leaves').style.display   = tab === 'leaves'   ? 'flex' : 'none';
-    if (tab === 'leaves') renderLeavesPanel();
-  }
-
-  // ── LEAVES PANEL RENDER ───────────────────────────────────────────────────
-  function renderLeavesPanel() {
-    const list = document.getElementById('leave-list');
-    list.innerHTML = '';
-    const now   = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const week  = new Date(today); week.setDate(today.getDate() - 7);
-
-    const filtered = leaveData.filter(l => {
-      const d = l.date?.toDate ? l.date.toDate() : new Date();
-      if (leaveFilter === 'today') return l.dateStr === todayStr();
-      if (leaveFilter === 'week')  return d >= week;
-      return true;
+    // ── Query leaves for this date ────────────────────────────────────────
+    const dStr=dateStr(date);
+    const leaveSnap=await db.collection('leaves')
+      .where('dateStr','==',dStr).get();
+    leaveSnap.forEach(doc=>{
+      const d={id:doc.id,...doc.data()};
+      if(!byTech[d.techId]) byTech[d.techId]={
+        techId:d.techId, name:d.name, franchise:d.franchise,
+        sessions:[], totalKm:0, onLeave:false
+      };
+      byTech[d.techId].onLeave=true;
     });
 
-    if (filtered.length === 0) {
-      list.innerHTML = `
-        <div class="leave-empty">
-          <div style="font-size:2.5rem;margin-bottom:0.75rem">🏖</div>
-          <div style="color:#94a3b8;font-weight:600">No leaves found</div>
-          <small style="color:#475569;margin-top:4px">for the selected period</small>
+    historyData=byTech;
+    renderHistoryList();
+    updateHistorySummary();
+
+    // Draw all last-known positions on map (from most recent trail point per tech)
+    renderHistoryMapPins(Object.values(byTech), startTs, endTs);
+
+  } catch(e){
+    document.getElementById('hist-list').innerHTML=
+      `<div class="empty-state"><div class="empty-icon">⚠️</div><div style="color:#ef4444">Error loading history.<br><small>${e.message}</small></div></div>`;
+  }
+}
+
+// ── HISTORY SUMMARY BAR ───────────────────────────────────────────────────────
+function updateHistorySummary(){
+  const all=Object.values(historyData);
+  const worked=all.filter(t=>t.sessions.length>0&&!t.onLeave);
+  const onLeave=all.filter(t=>t.onLeave);
+  const km=all.reduce((s,t)=>s+t.totalKm,0);
+  document.getElementById('h-total').textContent  =all.length;
+  document.getElementById('h-worked').textContent =worked.length;
+  document.getElementById('h-leave').textContent  =onLeave.length;
+  document.getElementById('h-km').textContent     =km.toFixed(1);
+}
+
+// ── HISTORY LIST ──────────────────────────────────────────────────────────────
+function renderHistoryList(){
+  const list=document.getElementById('hist-list');
+  list.innerHTML='';
+  const search=(document.getElementById('hist-search').value||'').toLowerCase();
+  const items=Object.values(historyData).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+
+  if(items.length===0){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div>No data for this date</div></div>';
+    return;
+  }
+
+  items.forEach(tech=>{
+    if(search&&!`${tech.name} ${tech.franchise}`.toLowerCase().includes(search)) return;
+    const bg=aColor(tech.franchise);
+    const initial=(tech.name||'?').charAt(0).toUpperCase();
+    const totalSessions=tech.sessions.length;
+    const card=document.createElement('div');
+    card.className=`hist-card${tech.onLeave?' leave-hist':''}${selectedTechId===tech.techId?' selected':''}`;
+
+    if(tech.onLeave){
+      card.innerHTML=`
+        <div class="tc-row">
+          <div class="tc-avatar" style="background:#f97316">${initial}</div>
+          <div class="tc-info">
+            <div class="tc-name">${tech.name||'Unknown'}</div>
+            <div class="tc-franchise">${tech.franchise||''}</div>
+          </div>
+          <span class="tc-badge leave">🏖 LEAVE</span>
         </div>`;
+    } else if(totalSessions===0){
+      card.innerHTML=`
+        <div class="tc-row">
+          <div class="tc-avatar" style="background:#6b7280">${initial}</div>
+          <div class="tc-info">
+            <div class="tc-name">${tech.name||'Unknown'}</div>
+            <div class="tc-franchise">${tech.franchise||''}</div>
+          </div>
+          <span class="tc-badge offline">● ABSENT</span>
+        </div>`;
+    } else {
+      const firstIn=tech.sessions[0]?.punchIn?.toDate?.();
+      const lastOut=tech.sessions[tech.sessions.length-1]?.punchOut?.toDate?.();
+      card.innerHTML=`
+        <div class="tc-row">
+          <div class="tc-avatar" style="background:${bg}">${initial}</div>
+          <div class="tc-info">
+            <div class="tc-name">${tech.name||'Unknown'}</div>
+            <div class="tc-franchise">${tech.franchise||''}</div>
+          </div>
+          <span class="tc-badge active">✓ WORKED</span>
+        </div>
+        <div class="tc-stats-row" style="margin-top:0.5rem">
+          <div class="tc-stat"><span>${tech.totalKm.toFixed(1)}</span><small>km</small></div>
+          <div class="tc-stat"><span>${totalSessions}</span><small>sessions</small></div>
+          <div class="tc-stat"><span>${firstIn&&lastOut?dur(firstIn,lastOut):'--'}</span><small>total time</small></div>
+        </div>`;
+      card.onclick=()=>openHistoryDetail(tech.techId);
+    }
+    list.appendChild(card);
+  });
+}
+
+// ── HISTORY MAP PINS ──────────────────────────────────────────────────────────
+async function renderHistoryMapPins(techs, startTs, endTs){
+  clearMapMarkers();
+  const bounds=new google.maps.LatLngBounds();
+  let hasBounds=false;
+
+  for(const tech of techs){
+    if(tech.onLeave||tech.sessions.length===0) continue;
+    // Get last trail point for this tech on this date
+    try{
+      const snap=await db.collection('locations').doc(tech.techId)
+        .collection('trail')
+        .where('timestamp','>=',startTs)
+        .where('timestamp','<=',endTs)
+        .orderBy('timestamp','desc')
+        .limit(1).get();
+      if(snap.empty) continue;
+      const pt=snap.docs[0].data();
+      if(!pt.lat||!pt.lng) continue;
+
+      const bg=aColor(tech.franchise);
+      const initial=(tech.name||'?').charAt(0).toUpperCase();
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="38" height="46" viewBox="0 0 38 46">
+        <circle cx="19" cy="17" r="16" fill="${bg}" stroke="#ffffff" stroke-width="2"/>
+        <polygon points="11,31 27,31 19,44" fill="${bg}"/>
+        <text x="19" y="23" text-anchor="middle" fill="white" font-size="13" font-family="Arial" font-weight="bold">${initial}</text>
+      </svg>`;
+      const marker=new google.maps.Marker({
+        position:{lat:pt.lat,lng:pt.lng}, map,
+        icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),
+              scaledSize:new google.maps.Size(38,46),anchor:new google.maps.Point(19,44)},
+        title:tech.name, zIndex:5
+      });
+      const iw=new google.maps.InfoWindow({content:`
+        <div style="font-family:sans-serif;padding:4px">
+          <strong>${tech.name}</strong><br>
+          <span style="color:#666;font-size:0.82rem">${tech.franchise}</span><br>
+          <span style="color:#7c3aed;font-weight:600">📅 History: ${dateStr(selectedDate)}</span><br>
+          🛣️ ${tech.totalKm.toFixed(1)} km | ${tech.sessions.length} session(s)
+        </div>`});
+      marker.addListener('click',()=>{
+        Object.values(infoWindows).forEach(i=>i.close());
+        iw.open(map,marker);
+        openHistoryDetail(tech.techId);
+      });
+      markers[tech.techId]=marker;
+      infoWindows[tech.techId]=iw;
+      bounds.extend({lat:pt.lat,lng:pt.lng});
+      hasBounds=true;
+    }catch(_){}
+  }
+  if(hasBounds) map.fitBounds(bounds);
+}
+
+// ── OPEN HISTORY DETAIL ───────────────────────────────────────────────────────
+async function openHistoryDetail(techId){
+  selectedTechId=techId;
+  renderHistoryList();
+  const tech=historyData[techId];
+  if(!tech) return;
+
+  document.getElementById('dp-title').textContent=tech.name||'Unknown';
+  document.getElementById('dp-sub').textContent=`${tech.franchise||''} · ${dateStr(selectedDate)}`;
+  document.getElementById('dp-session-count').textContent='Loading...';
+  document.getElementById('dp-sessions').innerHTML='<div style="color:#64748b;font-size:0.83rem">Loading...</div>';
+  document.getElementById('dp-timeline').innerHTML='<div style="color:#64748b;font-size:0.83rem">Loading route...</div>';
+  document.getElementById('dp-trail-summary').innerHTML='';
+  document.getElementById('detail-panel').className='open history-mode';
+  document.getElementById('replay-bar').style.display='none';
+
+  // Sessions
+  const sessions=tech.sessions.sort((a,b)=>{
+    const ta=a.punchIn?.toDate?.()||new Date(0);
+    const tb=b.punchIn?.toDate?.()||new Date(0);
+    return ta-tb;
+  });
+  const container=document.getElementById('dp-sessions');
+  const countEl  =document.getElementById('dp-session-count');
+  container.innerHTML='';
+  if(sessions.length===0){
+    countEl.textContent='0 sessions';
+    container.innerHTML='<div style="color:#64748b;font-size:0.83rem">No sessions recorded.</div>';
+  } else {
+    countEl.textContent=`${sessions.length} session${sessions.length>1?'s':''}`;
+    sessions.forEach((s,i)=>{
+      const pIn =s.punchIn?.toDate?.();
+      const pOut=s.punchOut?.toDate?.();
+      const inN=document.createElement('div');
+      inN.className='session-node punch-in';
+      inN.innerHTML=`<div class="session-box in-box">
+        <div><div class="sb-type in">▶ Punch IN — Session ${i+1}</div><div class="sb-time">${fmt(pIn)}</div></div>
+        <div style="text-align:right"><div class="sb-km">🛣️ ${(s.totalKm||0).toFixed(1)} km</div><div class="sb-dur">${fmtD(pIn)}</div></div>
+      </div>`;
+      container.appendChild(inN);
+      const outN=document.createElement('div');
+      outN.className='session-node punch-out';
+      outN.innerHTML=`<div class="session-box out-box">
+        <div><div class="sb-type out">■ Punch OUT — Session ${i+1}</div><div class="sb-time">${fmt(pOut)}</div></div>
+        <div style="text-align:right"><div class="sb-dur">${pIn&&pOut?dur(pIn,pOut):''}</div></div>
+      </div>`;
+      container.appendChild(outN);
+    });
+  }
+
+  // Load trail for this date
+  loadHistoryTrail(techId);
+}
+
+// ── LOAD HISTORY TRAIL ────────────────────────────────────────────────────────
+async function loadHistoryTrail(techId){
+  if(trailUnsub){trailUnsub();trailUnsub=null;}
+  const timeline=document.getElementById('dp-timeline');
+  const summary =document.getElementById('dp-trail-summary');
+  clearRoute();
+
+  const {start,end}=dayBounds(selectedDate);
+  const startTs=firebase.firestore.Timestamp.fromDate(start);
+  const endTs  =firebase.firestore.Timestamp.fromDate(end);
+
+  try{
+    // ── Query trail subcollection filtered by date ────────────────────────
+    const snap=await db.collection('locations').doc(techId)
+      .collection('trail')
+      .where('timestamp','>=',startTs)
+      .where('timestamp','<=',endTs)
+      .orderBy('timestamp','asc')
+      .get();
+
+    const docs=[];
+    snap.forEach(d=>docs.push(d.data()));
+
+    if(docs.length===0){
+      timeline.innerHTML='<div style="color:#64748b;font-size:0.83rem">No movement data for this date.</div>';
+      summary.innerHTML='';
       return;
     }
 
-    filtered.forEach(l => {
-      const bg      = aColor(l.franchise);
-      const initial = (l.name||'?').charAt(0).toUpperCase();
-      const d       = l.date?.toDate ? l.date.toDate() : null;
-      const card    = document.createElement('div');
-      card.className = 'leave-card';
-      card.innerHTML = `
-        <div class="lc-row">
-          <div class="lc-avatar" style="background:${bg}">${initial}</div>
-          <div style="flex:1;min-width:0">
-            <div class="lc-name">${l.name||'Unknown'}</div>
-            <div class="lc-franchise">${l.franchise||''}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="lc-date">📅 ${d ? formatDate(d) : l.dateStr || '--'}</div>
-            <span class="lc-type">${(l.type||'casual').toUpperCase()} LEAVE</span>
-          </div>
-        </div>`;
-      list.appendChild(card);
-    });
-  }
+    // Reverse geocode all points
+    timeline.innerHTML='<div style="color:#64748b;font-size:0.78rem;padding:0.4rem 0" class="loading-pulse">📡 Resolving location names...</div>';
+    const resolved=await Promise.all(docs.map(async(d,i)=>{
+      const place=(d.lat&&d.lng)?await reverseGeocode(d.lat,d.lng):'Unknown';
+      return{...d,place,index:i};
+    }));
 
-  // ── SIDEBAR (tracking) RENDER ─────────────────────────────────────────────
-  function renderSidebar() {
-    const list   = document.getElementById('tech-list');
-    const search = document.getElementById('search').value.toLowerCase();
-    list.innerHTML = '';
-
-    const sorted = Object.values(techData).sort((a, b) => {
-      const rank = s => s === 'active' ? 0 : s === 'leave' ? 1 : 2;
-      if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
-      return (a.name||'').localeCompare(b.name||'');
-    });
-
-    let count = 0;
-    sorted.forEach(tech => {
-      const isActive = tech.status === 'active';
-      const isLeave  = tech.status === 'leave';
-      if (franchiseFilter !== 'all' && tech.franchise !== franchiseFilter) return;
-      if (statusFilter === 'active'  && !isActive) return;
-      if (statusFilter === 'offline' && (isActive || isLeave)) return;
-      if (statusFilter === 'leave'   && !isLeave)  return;
-      if (search && !`${tech.name} ${tech.franchise}`.toLowerCase().includes(search)) return;
-      count++;
-      list.appendChild(buildCard(tech, isActive, isLeave));
-    });
-
-    if (count === 0) {
-      list.innerHTML = `
-        <div class="empty-state">
-          <div class="icon">🚛</div>
-          <div>No technicians found</div>
-          <small style="margin-top:4px;display:block">Try a different filter</small>
-        </div>`;
+    // From → To summary
+    if(resolved.length>=2){
+      const first=resolved[0];
+      const last =resolved[resolved.length-1];
+      summary.innerHTML=`<div class="tl-route">
+        <span>🟢 <strong style="color:#f1f5f9">${first.place}</strong></span>
+        <span class="arrow">→</span>
+        <span>📍 <strong style="color:#60a5fa">${last.place}</strong></span>
+        <span style="margin-left:auto;color:#60a5fa">🛣️ ${(last.totalKm||0).toFixed(1)} km total</span>
+      </div>`;
     }
 
-    // Update active badge
-    const activeCount = Object.values(techData).filter(t => t.status === 'active').length;
-    document.getElementById('active-badge').textContent = activeCount;
+    // Draw trail items
+    timeline.innerHTML='';
+    resolved.forEach((d,i)=>{
+      const ts=d.timestamp?.toDate?fmt(d.timestamp.toDate()):'--';
+      const km=(d.totalKm||0).toFixed(2);
+      const el=document.createElement('div');
+      el.className='tl-item';
+      el.dataset.index=i;
+      el.innerHTML=`
+        <div class="tl-time">🕐 ${ts}</div>
+        <div class="tl-place">📍 ${d.place}</div>
+        <div class="tl-coords">${d.lat?.toFixed(5)||'--'}°, ${d.lng?.toFixed(5)||'--'}°</div>
+        <div class="tl-km">🛣️ ${km} km</div>`;
+      el.onclick=()=>panToPoint(d.lat,d.lng,el);
+      timeline.appendChild(el);
+    });
+
+    // Draw polyline route on map
+    drawRoute(resolved);
+
+    // Show replay bar
+    document.getElementById('replay-bar').style.display='flex';
+    replayPoints=resolved;
+    replayIndex=0;
+
+  }catch(e){
+    // Firestore index not created yet — show link
+    if(e.code==='failed-precondition'||e.message?.includes('index')){
+      timeline.innerHTML=`<div style="color:#f97316;font-size:0.82rem;padding:0.5rem;background:#451a03;border-radius:8px">
+        ⚠️ Firestore index required.<br>
+        <a href="${e.message.match(/https?:\/\/[^\s]+/)?.[0]||'https://console.firebase.google.com'}"
+           target="_blank" style="color:#fb923c">👆 Click here to create index</a><br>
+        <small style="color:#92400e">Then reload the page.</small>
+      </div>`;
+    } else {
+      timeline.innerHTML=`<div style="color:#ef4444;font-size:0.82rem">Error: ${e.message}</div>`;
+    }
+  }
+}
+
+// ── DRAW ROUTE POLYLINE ───────────────────────────────────────────────────────
+function drawRoute(points){
+  clearRoute();
+  if(points.length<2) return;
+  const path=points.filter(p=>p.lat&&p.lng).map(p=>({lat:p.lat,lng:p.lng}));
+  routePolyline=new google.maps.Polyline({
+    path, geodesic:true,
+    strokeColor:'#7c3aed', strokeOpacity:0.85, strokeWeight:3,
+    map
+  });
+  const bounds=new google.maps.LatLngBounds();
+  path.forEach(p=>bounds.extend(p));
+  map.fitBounds(bounds);
+}
+
+function clearRoute(){
+  if(routePolyline){routePolyline.setMap(null);routePolyline=null;}
+  if(replayMarker){replayMarker.setMap(null);replayMarker=null;}
+  if(replayTimer){clearInterval(replayTimer);replayTimer=null;}
+  replayRunning=false;
+  document.getElementById('btn-replay').textContent='▶ Replay';
+  document.getElementById('btn-replay').classList.remove('active-btn');
+  document.getElementById('replay-fill').style.width='0%';
+  document.getElementById('replay-label').textContent='0%';
+}
+
+// ── ROUTE REPLAY ─────────────────────────────────────────────────────────────
+function toggleReplay(){
+  if(replayRunning){
+    clearInterval(replayTimer);replayTimer=null;replayRunning=false;
+    document.getElementById('btn-replay').textContent='▶ Replay';
+    document.getElementById('btn-replay').classList.remove('active-btn');
+  } else {
+    if(replayPoints.length<2) return;
+    replayRunning=true;replayIndex=0;
+    document.getElementById('btn-replay').textContent='⏸ Pause';
+    document.getElementById('btn-replay').classList.add('active-btn');
+    if(replayMarker) replayMarker.setMap(null);
+    replayMarker=new google.maps.Marker({
+      position:{lat:replayPoints[0].lat,lng:replayPoints[0].lng},
+      map,
+      icon:{url:'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',scaledSize:new google.maps.Size(28,28)},
+      zIndex:99, title:'Replay'
+    });
+    runReplay();
+  }
+}
+
+function runReplay(){
+  if(replayTimer) clearInterval(replayTimer);
+  replayTimer=setInterval(()=>{
+    if(replayIndex>=replayPoints.length){
+      clearInterval(replayTimer);replayRunning=false;replayIndex=0;
+      document.getElementById('btn-replay').textContent='▶ Replay';
+      document.getElementById('btn-replay').classList.remove('active-btn');
+      return;
+    }
+    const pt=replayPoints[replayIndex];
+    if(pt.lat&&pt.lng){
+      replayMarker.setPosition({lat:pt.lat,lng:pt.lng});
+      map.panTo({lat:pt.lat,lng:pt.lng});
+      // Highlight current trail item
+      document.querySelectorAll('.tl-item').forEach(el=>el.classList.remove('highlighted'));
+      const el=document.querySelector(`.tl-item[data-index="${replayIndex}"]`);
+      if(el){el.classList.add('highlighted');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+    }
+    const pct=Math.round((replayIndex/replayPoints.length)*100);
+    document.getElementById('replay-fill').style.width=pct+'%';
+    document.getElementById('replay-label').textContent=pct+'%';
+    replayIndex++;
+  }, Math.max(100, 600/replaySpeedMult));
+}
+
+function replaySpeed(mult){
+  replaySpeedMult=mult;
+  ['spd1','spd3','spd6'].forEach(id=>document.getElementById(id).classList.remove('active-btn'));
+  document.getElementById('spd'+mult).classList.add('active-btn');
+  if(replayRunning) runReplay(); // restart with new speed
+}
+
+function panToPoint(lat,lng,el){
+  if(!lat||!lng) return;
+  map.panTo({lat,lng}); map.setZoom(17);
+  document.querySelectorAll('.tl-item').forEach(e=>e.classList.remove('highlighted'));
+  el.classList.add('highlighted');
+}
+
+// ── LIVE DETAIL ───────────────────────────────────────────────────────────────
+async function openDetail(techId){
+  selectedTechId=techId;
+  renderSidebar();
+  const tech=techData[techId];
+  if(!tech) return;
+
+  if(tech.lat&&tech.lng){
+    map.panTo({lat:tech.lat,lng:tech.lng}); map.setZoom(16);
+    Object.values(infoWindows).forEach(iw=>iw.close());
+    infoWindows[techId]?.open(map,markers[techId]);
+  }
+  document.getElementById('overlay-info').innerHTML=`
+    <strong style="color:#f1f5f9">${tech.name}</strong><br>
+    <span style="color:#94a3b8">${tech.franchise}</span><br>
+    <span style="color:#60a5fa">🛣️ ${(tech.totalKm||0).toFixed(1)} km</span>`;
+  document.getElementById('dp-title').textContent=tech.name||'Unknown';
+  document.getElementById('dp-sub').textContent=tech.franchise||'';
+  document.getElementById('dp-session-count').textContent='Loading...';
+  document.getElementById('dp-sessions').innerHTML='<div style="color:#64748b;font-size:0.83rem">Loading...</div>';
+  document.getElementById('dp-timeline').innerHTML='<div style="color:#64748b;font-size:0.83rem">Loading locations...</div>';
+  document.getElementById('dp-trail-summary').innerHTML='';
+  document.getElementById('detail-panel').className='open';
+  document.getElementById('replay-bar').style.display='none';
+
+  // Sessions
+  try{
+    const snap=await db.collection('sessions').where('techId','==',techId).get();
+    const sessions=[];
+    snap.forEach(doc=>sessions.push(doc.data()));
+    sessions.sort((a,b)=>(a.punchIn?.toDate?.()||new Date(0))-(b.punchIn?.toDate?.()||new Date(0)));
+    const container=document.getElementById('dp-sessions');
+    const countEl  =document.getElementById('dp-session-count');
+    container.innerHTML='';
+    if(sessions.length===0){
+      countEl.textContent='0 sessions';
+      container.innerHTML='<div style="color:#64748b;font-size:0.83rem">No sessions yet.</div>';
+    } else {
+      countEl.textContent=`${sessions.length} session${sessions.length>1?'s':''}`;
+      sessions.forEach((s,i)=>{
+        const pIn=s.punchIn?.toDate?.(),pOut=s.punchOut?.toDate?.();
+        const isLast=i===sessions.length-1,isNow=!pOut&&isLast;
+        const inN=document.createElement('div');
+        inN.className=`session-node punch-in${isNow?' active-now':''}`;
+        inN.innerHTML=`<div class="session-box in-box${isNow?' active-box':''}">
+          <div><div class="sb-type in${isNow?' now':''}">${isNow?'● LIVE NOW':`▶ Punch IN — Session ${i+1}`}</div><div class="sb-time">${fmt(pIn)}</div></div>
+          <div style="text-align:right"><div class="sb-km">🛣️ ${(s.totalKm||0).toFixed(1)} km</div><div class="sb-dur">${fmtD(pIn)}</div></div>
+        </div>`;
+        container.appendChild(inN);
+        const outN=document.createElement('div');
+        outN.className='session-node punch-out';
+        outN.innerHTML=`<div class="session-box out-box">
+          <div><div class="sb-type out">■ Punch OUT — Session ${i+1}</div><div class="sb-time">${fmt(pOut)}</div></div>
+          <div style="text-align:right"><div class="sb-dur">${pIn&&pOut?dur(pIn,pOut):isNow?'Active':''}</div></div>
+        </div>`;
+        container.appendChild(outN);
+      });
+    }
+  }catch(_){
+    document.getElementById('dp-sessions').innerHTML='<div style="color:#ef4444;font-size:0.83rem">Could not load sessions.</div>';
   }
 
-  // ── TECH CARD ─────────────────────────────────────────────────────────────
-  function buildCard(tech, isActive, isLeave) {
-    const div      = document.createElement('div');
-    const initials = (tech.name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-    const bg       = aColor(tech.franchise);
-    const km       = (tech.totalKm || 0).toFixed(1);
-    const spd      = ((tech.speed  || 0) * 3.6).toFixed(0);
-    const upd      = tech.updatedAt?.toDate ? timeAgo(tech.updatedAt.toDate()) : '--';
+  loadLiveTrail(techId);
+}
 
-    const badgeClass = isActive ? 'active' : isLeave ? 'leave' : 'offline';
-    const badgeText  = isActive ? '● LIVE' : isLeave ? '🏖 LEAVE' : '● OFF';
-    const cardClass  = isActive ? 'active-status' : isLeave ? 'leave-status' : 'offline-status';
+// ── LIVE TRAIL ────────────────────────────────────────────────────────────────
+function loadLiveTrail(techId){
+  if(trailUnsub){trailUnsub();trailUnsub=null;}
+  const timeline=document.getElementById('dp-timeline');
+  const summary =document.getElementById('dp-trail-summary');
 
-    div.className = `tech-card ${cardClass} ${tech.id===selectedTechId?'selected':''}`;
-    div.innerHTML = `
-      <div class="tc-row">
-        <div class="tc-avatar" style="background:${bg}">${initials}</div>
-        <div class="tc-info">
-          <div class="tc-name">${tech.name||'Unknown'}</div>
-          <div class="tc-franchise">${tech.franchise||''}</div>
-        </div>
-        <span class="tc-badge ${badgeClass}">${badgeText}</span>
+  const render=async docs=>{
+    if(docs.length===0){
+      timeline.innerHTML='<div style="color:#64748b;font-size:0.83rem">No movement yet.</div>';
+      summary.innerHTML=''; return;
+    }
+    timeline.innerHTML='<div style="color:#64748b;font-size:0.76rem" class="loading-pulse">📡 Resolving locations...</div>';
+    const resolved=await Promise.all(docs.map(async d=>{
+      const place=(d.lat&&d.lng)?await reverseGeocode(d.lat,d.lng):'Unknown';
+      return{...d,place};
+    }));
+    if(resolved.length>=2){
+      const first=resolved[resolved.length-1],last=resolved[0];
+      summary.innerHTML=`<div class="tl-route">
+        <span>🟢 <strong style="color:#f1f5f9">${first.place}</strong></span>
+        <span class="arrow">→</span>
+        <span>📍 <strong style="color:#60a5fa">${last.place}</strong></span>
+      </div>`;
+    }
+    timeline.innerHTML='';
+    resolved.forEach(d=>{
+      const ts=d.timestamp?.toDate?fmt(d.timestamp.toDate()):'--';
+      const km=(d.totalKm||0).toFixed(2);
+      const el=document.createElement('div');
+      el.className='tl-item';
+      el.innerHTML=`
+        <div class="tl-time">🕐 ${ts}</div>
+        <div class="tl-place">📍 ${d.place}</div>
+        <div class="tl-coords">${d.lat?.toFixed(5)||'--'}°, ${d.lng?.toFixed(5)||'--'}°</div>
+        <div class="tl-km">🛣️ ${km} km</div>`;
+      el.onclick=()=>panToPoint(d.lat,d.lng,el);
+      timeline.appendChild(el);
+    });
+  };
+
+  trailUnsub=db.collection('locations').doc(techId).collection('trail')
+    .orderBy('timestamp','desc').limit(30)
+    .onSnapshot(snap=>{
+      const docs=[];snap.forEach(d=>docs.push(d.data()));render(docs);
+    },()=>{
+      db.collection('locations').doc(techId).collection('trail').limit(30).get()
+        .then(snap=>{
+          const docs=[];snap.forEach(d=>docs.push(d.data()));
+          docs.sort((a,b)=>(b.timestamp?.toDate?.()||new Date(0))-(a.timestamp?.toDate?.()||new Date(0)));
+          render(docs);
+        });
+    });
+}
+
+// ── CLOSE DETAIL ──────────────────────────────────────────────────────────────
+function closeDetail(){
+  document.getElementById('detail-panel').classList.remove('open');
+  if(trailUnsub){trailUnsub();trailUnsub=null;}
+  clearRoute();
+  selectedTechId=null;
+  document.getElementById('overlay-info').textContent='Click a card to focus';
+  if(!isHistoryMode) renderSidebar();
+  else renderHistoryList();
+}
+
+// ── LIVE MARKERS ──────────────────────────────────────────────────────────────
+function renderMarkers(){
+  clearMapMarkers();
+  const bounds=new google.maps.LatLngBounds();
+  let hasBounds=false;
+  Object.values(techData).forEach(tech=>{
+    if(!tech.lat||!tech.lng) return;
+    const isActive=tech.status==='active',isLeave=tech.status==='leave';
+    const bg=isLeave?'#f97316':aColor(tech.franchise);
+    const color=isActive?bg:isLeave?'#f97316':'#6b7280';
+    const initial=(tech.name||'?').charAt(0).toUpperCase();
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+      <circle cx="20" cy="18" r="16" fill="${color}" stroke="#ffffff" stroke-width="2.5"/>
+      <polygon points="12,32 28,32 20,46" fill="${color}"/>
+      <text x="20" y="24" text-anchor="middle" fill="white" font-size="13" font-family="Arial" font-weight="bold">${initial}</text>
+    </svg>`;
+    const marker=new google.maps.Marker({
+      position:{lat:tech.lat,lng:tech.lng},map,title:tech.name,
+      icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),
+            scaledSize:new google.maps.Size(40,48),anchor:new google.maps.Point(20,46)},
+      zIndex:isActive?10:isLeave?5:1
+    });
+    const iw=new google.maps.InfoWindow({content:`
+      <div style="font-family:sans-serif;padding:4px;min-width:165px">
+        <strong>${tech.name||'Unknown'}</strong><br>
+        <span style="color:#666;font-size:0.82rem">${tech.franchise||''}</span><br><br>
+        ${isLeave
+          ?'<div style="color:#f97316;font-weight:bold">🏖 On Leave Today</div>'
+          :`<div>🛣️ ${(tech.totalKm||0).toFixed(1)} km</div>
+            <div>⚡ ${((tech.speed||0)*3.6).toFixed(0)} km/h</div>
+            <div style="color:${isActive?'#16a34a':'#dc2626'};font-weight:bold;margin-top:4px">${isActive?'🟢 LIVE':'🔴 Offline'}</div>`}
+      </div>`});
+    marker.addListener('click',()=>{
+      Object.values(infoWindows).forEach(i=>i.close());
+      iw.open(map,marker);
+      if(!isLeave) openDetail(tech.id);
+    });
+    markers[tech.id]=marker;infoWindows[tech.id]=iw;
+    bounds.extend({lat:tech.lat,lng:tech.lng});hasBounds=true;
+  });
+  if(hasBounds&&!selectedTechId) map.fitBounds(bounds);
+}
+
+function clearMapMarkers(){
+  Object.values(markers).forEach(m=>m.setMap(null));
+  Object.values(infoWindows).forEach(iw=>iw.close());
+  markers={};infoWindows={};
+}
+
+// ── LEAVES LISTENER ───────────────────────────────────────────────────────────
+function startLeavesListener(){
+  if(leavesUnsub) leavesUnsub();
+  leavesUnsub=db.collection('leaves').orderBy('date','desc').limit(300)
+    .onSnapshot(snap=>{
+      leaveData=[];
+      snap.forEach(doc=>leaveData.push({id:doc.id,...doc.data()}));
+      updateHeader();
+      const todayLeaves=leaveData.filter(l=>l.dateStr===todayStr()).length;
+      document.getElementById('leave-badge').textContent=todayLeaves;
+      if(activeTab==='leaves') renderLeavesPanel();
+    });
+}
+
+function renderLeavesPanel(){
+  const list=document.getElementById('leave-list');
+  list.innerHTML='';
+  const now=new Date();
+  const week=new Date(now); week.setDate(now.getDate()-7);
+  const month=new Date(now); month.setDate(now.getDate()-30);
+
+  const filtered=leaveData.filter(l=>{
+    const d=l.date?.toDate?l.date.toDate():new Date();
+    if(leaveFilter==='today') return l.dateStr===todayStr();
+    if(leaveFilter==='week')  return d>=week;
+    if(leaveFilter==='month') return d>=month;
+    return true;
+  });
+
+  if(filtered.length===0){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">🏖</div><div style="color:#94a3b8;font-weight:600">No leaves found</div><small style="color:#475569;margin-top:4px">for selected period</small></div>';
+    return;
+  }
+  filtered.forEach(l=>{
+    const bg=aColor(l.franchise);
+    const initial=(l.name||'?').charAt(0).toUpperCase();
+    const d=l.date?.toDate?l.date.toDate():null;
+    const card=document.createElement('div');
+    card.className='leave-card';
+    card.innerHTML=`<div class="lc-row">
+      <div class="lc-avatar" style="background:${bg}">${initial}</div>
+      <div style="flex:1;min-width:0">
+        <div class="lc-name">${l.name||'Unknown'}</div>
+        <div class="lc-franchise">${l.franchise||''}</div>
       </div>
-      ${isLeave ? `
-        <div style="margin-top:0.6rem;padding:0.4rem 0.6rem;background:#451a03;border-radius:8px;font-size:0.75rem;color:#fed7aa;text-align:center">
-          🏖 On Leave Today — Not Tracking
-        </div>` : `
-      <div class="tc-stats-row">
+      <div style="text-align:right">
+        <div class="lc-date">📅 ${d?fmtD(d):l.dateStr||'--'}</div>
+        <span class="lc-type">${(l.type||'casual').toUpperCase()} LEAVE</span>
+      </div>
+    </div>`;
+    list.appendChild(card);
+  });
+}
+
+// ── HEADER ────────────────────────────────────────────────────────────────────
+function updateHeader(){
+  if(isHistoryMode) return;
+  const all=Object.values(techData);
+  const active=all.filter(t=>t.status==='active');
+  const onLeave=all.filter(t=>t.status==='leave');
+  const km=all.reduce((s,t)=>s+(t.totalKm||0),0);
+  document.getElementById('active-count').textContent =active.length;
+  document.getElementById('leave-count').textContent  =onLeave.length;
+  document.getElementById('total-count').textContent  =all.length;
+  document.getElementById('total-km').textContent     =km.toFixed(1);
+  document.getElementById('last-updated').textContent =
+    new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
+
+// ── SIDEBAR (live) ────────────────────────────────────────────────────────────
+function renderSidebar(){
+  const list=document.getElementById('tech-list');
+  const search=document.getElementById('search').value.toLowerCase();
+  list.innerHTML='';
+  const sorted=Object.values(techData).sort((a,b)=>{
+    const r=s=>s==='active'?0:s==='leave'?1:2;
+    return r(a.status)!==r(b.status)?r(a.status)-r(b.status):(a.name||'').localeCompare(b.name||'');
+  });
+  let count=0;
+  sorted.forEach(tech=>{
+    const isActive=tech.status==='active',isLeave=tech.status==='leave';
+    if(franchiseFilter!=='all'&&tech.franchise!==franchiseFilter) return;
+    if(statusFilter==='active'&&!isActive) return;
+    if(statusFilter==='offline'&&(isActive||isLeave)) return;
+    if(statusFilter==='leave'&&!isLeave) return;
+    if(search&&!`${tech.name} ${tech.franchise}`.toLowerCase().includes(search)) return;
+    count++;
+    list.appendChild(buildCard(tech,isActive,isLeave));
+  });
+  if(count===0) list.innerHTML='<div class="empty-state"><div class="empty-icon">🚛</div><div>No technicians found</div></div>';
+  document.getElementById('active-badge').textContent=Object.values(techData).filter(t=>t.status==='active').length;
+}
+
+function buildCard(tech,isActive,isLeave){
+  const div=document.createElement('div');
+  const initials=(tech.name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const bg=aColor(tech.franchise);
+  const km=(tech.totalKm||0).toFixed(1);
+  const spd=((tech.speed||0)*3.6).toFixed(0);
+  const upd=tech.updatedAt?.toDate?ago(tech.updatedAt.toDate()):'--';
+  const badgeCls=isActive?'active':isLeave?'leave':'offline';
+  const badgeTxt=isActive?'● LIVE':isLeave?'🏖 LEAVE':'● OFF';
+  const cardCls =isActive?'active-status':isLeave?'leave-status':'offline-status';
+  div.className=`tech-card ${cardCls}${tech.id===selectedTechId?' selected':''}`;
+  div.innerHTML=`<div class="tc-row">
+    <div class="tc-avatar" style="background:${bg}">${initials}</div>
+    <div class="tc-info"><div class="tc-name">${tech.name||'Unknown'}</div><div class="tc-franchise">${tech.franchise||''}</div></div>
+    <span class="tc-badge ${badgeCls}">${badgeTxt}</span>
+  </div>
+  ${isLeave
+    ?`<div style="margin-top:0.5rem;padding:0.35rem 0.6rem;background:#451a03;border-radius:8px;font-size:0.73rem;color:#fed7aa;text-align:center">🏖 On Leave — Not Tracking</div>`
+    :`<div class="tc-stats-row">
         <div class="tc-stat"><span>${km}</span><small>km</small></div>
         <div class="tc-stat"><span>${spd}</span><small>km/h</small></div>
         <div class="tc-stat"><span>${upd}</span><small>updated</small></div>
       </div>`}`;
+  div.onclick=()=>isLeave?null:openDetail(tech.id);
+  return div;
+}
 
-    div.onclick = () => isLeave ? null : openDetail(tech.id);
-    return div;
-  }
+// ── FILTERS ───────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  activeTab=tab;
+  ['tracking','history','leaves'].forEach(t=>{
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
+    document.getElementById(`panel-${t}`).style.display=t===tab?'flex':'none';
+  });
+  if(tab==='leaves') renderLeavesPanel();
+  if(tab==='history'&&isHistoryMode) renderHistoryList();
+  if(tab==='tracking'&&!isHistoryMode) renderSidebar();
+}
+function setFranchise(val,el){
+  franchiseFilter=val;
+  document.querySelectorAll('#franchise-tabs .ftab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); renderSidebar();
+}
+function setStatus(val,el){
+  statusFilter=val;
+  document.querySelectorAll('#status-tabs .stab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); renderSidebar();
+}
+function setLeaveFilter(val,el){
+  leaveFilter=val;
+  document.querySelectorAll('#leave-filters .lfil').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); renderLeavesPanel();
+}
 
-  // ── OPEN DETAIL ───────────────────────────────────────────────────────────
-  async function openDetail(techId) {
-    selectedTechId = techId;
-    renderSidebar();
-    const tech = techData[techId];
-    if (!tech) return;
-
-    if (tech.lat && tech.lng) {
-      map.panTo({lat: tech.lat, lng: tech.lng});
-      map.setZoom(16);
-      Object.values(infoWindows).forEach(iw => iw.close());
-      infoWindows[techId]?.open(map, markers[techId]);
-    }
-
-    // Overlay update
-    document.getElementById('overlay-info').innerHTML = `
-      <strong style="color:#f1f5f9">${tech.name}</strong><br>
-      <span style="color:#94a3b8">${tech.franchise}</span><br>
-      <span style="color:#60a5fa">🛣️ ${(tech.totalKm||0).toFixed(1)} km</span>`;
-
-    document.getElementById('dp-name').textContent      = tech.name || 'Unknown';
-    document.getElementById('dp-franchise').textContent = tech.franchise || '';
-    document.getElementById('dp-session-count').textContent = 'Loading...';
-    document.getElementById('dp-sessions').innerHTML    =
-      '<div style="color:#64748b;font-size:0.85rem">Loading...</div>';
-    document.getElementById('dp-timeline').innerHTML    =
-      '<div style="color:#64748b;font-size:0.85rem">Loading locations...</div>';
-    document.getElementById('dp-trail-summary').innerHTML = '';
-    document.getElementById('detail-panel').classList.add('open');
-
-    // ── SESSIONS ───────────────────────────────────────────────────────────
-    try {
-      const snap = await db.collection('sessions')
-        .where('techId', '==', techId).get();
-      const sessions = [];
-      snap.forEach(doc => sessions.push(doc.data()));
-      sessions.sort((a, b) => {
-        const ta = a.punchIn?.toDate?.() || new Date(0);
-        const tb = b.punchIn?.toDate?.() || new Date(0);
-        return ta - tb;
-      });
-      const container = document.getElementById('dp-sessions');
-      const countEl   = document.getElementById('dp-session-count');
-      container.innerHTML = '';
-      if (sessions.length === 0) {
-        countEl.textContent = '0 sessions';
-        container.innerHTML = '<div style="color:#64748b;font-size:0.85rem">No sessions yet.</div>';
-      } else {
-        countEl.textContent = `${sessions.length} session${sessions.length>1?'s':''}`;
-        sessions.forEach((s, i) => {
-          const pIn  = s.punchIn?.toDate?.();
-          const pOut = s.punchOut?.toDate?.();
-          const isLast = i === sessions.length - 1;
-          const isNow  = !pOut && isLast;
-
-          const inNode = document.createElement('div');
-          inNode.className = `session-node punch-in${isNow?' active-now':''}`;
-          inNode.innerHTML = `
-            <div class="session-box in-box${isNow?' active-box':''}">
-              <div>
-                <div class="sb-type in${isNow?' now':''}">${isNow?'● LIVE NOW':`▶ Punch IN — Session ${i+1}`}</div>
-                <div class="sb-time">${pIn?formatTime(pIn):'--'}</div>
-              </div>
-              <div style="text-align:right">
-                <div class="sb-km">🛣️ ${(s.totalKm||0).toFixed(1)} km</div>
-                <div class="sb-dur">${pIn?formatDate(pIn):''}</div>
-              </div>
-            </div>`;
-          container.appendChild(inNode);
-
-          const outNode = document.createElement('div');
-          outNode.className = 'session-node punch-out';
-          outNode.innerHTML = `
-            <div class="session-box out-box">
-              <div>
-                <div class="sb-type out">■ Punch OUT — Session ${i+1}</div>
-                <div class="sb-time">${pOut?formatTime(pOut):isNow?'—':'--'}</div>
-              </div>
-              <div style="text-align:right">
-                <div class="sb-dur">${pIn&&pOut?duration(pIn,pOut):isNow?'Active':''}</div>
-              </div>
-            </div>`;
-          container.appendChild(outNode);
-        });
-      }
-    } catch (e) {
-      document.getElementById('dp-sessions').innerHTML =
-        '<div style="color:#ef4444;font-size:0.85rem">Could not load sessions.</div>';
-    }
-
-    loadTrail(techId);
-  }
-
-  // ── TRAIL WITH LOCATION NAMES ─────────────────────────────────────────────
-  function loadTrail(techId) {
-    if (trailUnsub) { trailUnsub(); trailUnsub = null; }
-    const timeline = document.getElementById('dp-timeline');
-    const summary  = document.getElementById('dp-trail-summary');
-
-    const render = async docs => {
-      if (docs.length === 0) {
-        timeline.innerHTML = '<div style="color:#64748b;font-size:0.85rem">No movement recorded yet.</div>';
-        summary.innerHTML  = '';
-        return;
-      }
-
-      timeline.innerHTML = '<div style="color:#64748b;font-size:0.8rem;padding:0.5rem 0">📡 Resolving location names...</div>';
-      summary.innerHTML  = '';
-
-      // Reverse geocode all trail points in parallel
-      const resolved = await Promise.all(
-        docs.map(async (d, i) => {
-          const place = (d.lat && d.lng)
-            ? await reverseGeocode(d.lat, d.lng)
-            : 'Unknown Location';
-          return { ...d, place, index: i };
-        })
-      );
-
-      // ── From / To summary ───────────────────────────────────────────────
-      if (resolved.length >= 2) {
-        const first = resolved[resolved.length - 1]; // oldest = last item (sorted desc)
-        const last  = resolved[0];                   // newest = first item
-        summary.innerHTML = `
-          <div class="tl-route">
-            <span>🟢 <strong style="color:#f1f5f9">${first.place}</strong></span>
-            <span class="arrow">→</span>
-            <span>📍 <strong style="color:#60a5fa">${last.place}</strong></span>
-          </div>`;
-      }
-
-      // ── Draw each trail point ────────────────────────────────────────────
-      timeline.innerHTML = '';
-      resolved.forEach(d => {
-        const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
-        const km  = (d.totalKm || 0).toFixed(2);
-        const el  = document.createElement('div');
-        el.className = 'tl-item';
-        el.innerHTML = `
-          <div class="tl-time">🕐 ${ts}</div>
-          <div class="tl-place">📍 ${d.place}</div>
-          <div class="tl-coords">${d.lat?.toFixed(5) || '--'}°, ${d.lng?.toFixed(5) || '--'}°</div>
-          <div class="tl-km">🛣️ ${km} km cumulative</div>`;
-        timeline.appendChild(el);
-      });
-    };
-
-    trailUnsub = db
-      .collection('locations').doc(techId)
-      .collection('trail')
-      .orderBy('timestamp', 'desc')
-      .limit(30)
-      .onSnapshot(
-        snap => {
-          const docs = [];
-          snap.forEach(d => docs.push(d.data()));
-          render(docs);
-        },
-        () => {
-          db.collection('locations').doc(techId)
-            .collection('trail').limit(30).get()
-            .then(snap => {
-              const docs = [];
-              snap.forEach(d => docs.push(d.data()));
-              docs.sort((a, b) => {
-                const ta = a.timestamp?.toDate?.() || new Date(0);
-                const tb = b.timestamp?.toDate?.() || new Date(0);
-                return tb - ta;
-              });
-              render(docs);
-            });
-        }
-      );
-  }
-
-  // ── CLOSE DETAIL ──────────────────────────────────────────────────────────
-  function closeDetail() {
-    document.getElementById('detail-panel').classList.remove('open');
-    if (trailUnsub) { trailUnsub(); trailUnsub = null; }
-    selectedTechId = null;
-    document.getElementById('overlay-info').textContent = 'Click a card to focus';
-    renderSidebar();
-  }
-
-  // ── MAP MARKERS ───────────────────────────────────────────────────────────
-  function renderMarkers() {
-    Object.values(markers).forEach(m => m.setMap(null));
-    Object.values(infoWindows).forEach(iw => iw.close());
-    markers = {}; infoWindows = {};
-
-    const bounds = new google.maps.LatLngBounds();
-    let hasBounds = false;
-
-    Object.values(techData).forEach(tech => {
-      if (!tech.lat || !tech.lng) return;
-      const isActive = tech.status === 'active';
-      const isLeave  = tech.status === 'leave';
-      const bg       = isLeave ? '#f97316' : aColor(tech.franchise);
-      const initial  = (tech.name||'?').charAt(0).toUpperCase();
-      const km       = (tech.totalKm||0).toFixed(1);
-      const color    = isActive ? bg : isLeave ? '#f97316' : '#6b7280';
-
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="42" height="50" viewBox="0 0 42 50">
-          <circle cx="21" cy="19" r="18" fill="${color}" stroke="#ffffff" stroke-width="2.5"/>
-          <polygon points="13,35 29,35 21,48" fill="${color}"/>
-          <text x="21" y="25" text-anchor="middle" fill="white"
-                font-size="14" font-family="Arial" font-weight="bold">${initial}</text>
-        </svg>`;
-
-      const marker = new google.maps.Marker({
-        position:  {lat: tech.lat, lng: tech.lng},
-        map,
-        title:     tech.name,
-        icon: {
-          url:        'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-          scaledSize: new google.maps.Size(42, 50),
-          anchor:     new google.maps.Point(21, 48),
-        },
-        zIndex: isActive ? 10 : isLeave ? 5 : 1,
-      });
-
-      const iw = new google.maps.InfoWindow({
-        content: `
-          <div style="font-family:sans-serif;padding:4px;min-width:170px">
-            <strong>${tech.name||'Unknown'}</strong><br>
-            <span style="color:#666;font-size:0.85rem">${tech.franchise||''}</span><br><br>
-            ${isLeave
-              ? `<div style="color:#f97316;font-weight:bold">🏖 On Leave Today</div>`
-              : `<div>📍 ${tech.lat.toFixed(4)}°, ${tech.lng.toFixed(4)}°</div>
-                 <div>🛣️ ${km} km</div>
-                 <div>⚡ ${((tech.speed||0)*3.6).toFixed(0)} km/h</div>
-                 <div style="color:${isActive?'#16a34a':'#dc2626'};font-weight:bold;margin-top:4px">
-                   ${isActive?'🟢 LIVE':'🔴 Offline'}
-                 </div>`
-            }
-          </div>`,
-      });
-
-      marker.addListener('click', () => {
-        Object.values(infoWindows).forEach(i => i.close());
-        iw.open(map, marker);
-        if (!isLeave) openDetail(tech.id);
-      });
-
-      markers[tech.id]     = marker;
-      infoWindows[tech.id] = iw;
-      bounds.extend({lat: tech.lat, lng: tech.lng});
-      hasBounds = true;
-    });
-
-    if (hasBounds && !selectedTechId) map.fitBounds(bounds);
-  }
-
-  // ── HEADER ────────────────────────────────────────────────────────────────
-  function updateHeader() {
-    const all     = Object.values(techData);
-    const active  = all.filter(t => t.status === 'active');
-    const onLeave = all.filter(t => t.status === 'leave');
-    const km      = all.reduce((s, t) => s + (t.totalKm||0), 0);
-    document.getElementById('active-count').textContent  = active.length;
-    document.getElementById('leave-count').textContent   = onLeave.length;
-    document.getElementById('total-count').textContent   = all.length;
-    document.getElementById('total-km').textContent      = km.toFixed(1);
-    document.getElementById('last-updated').textContent  =
-      new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
-  }
-
-  // ── FILTERS ───────────────────────────────────────────────────────────────
-  function setFranchise(val, el) {
-    franchiseFilter = val;
-    document.querySelectorAll('#franchise-tabs .ftab').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    renderSidebar();
-  }
-  function setStatus(val, el) {
-    statusFilter = val;
-    document.querySelectorAll('#status-tabs .stab').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    renderSidebar();
-  }
-  function setLeaveFilter(val, el) {
-    leaveFilter = val;
-    document.querySelectorAll('#leave-filters .lfil').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    renderLeavesPanel();
-  }
-
-  setInterval(updateHeader, 30000);
+setInterval(()=>{if(!isHistoryMode)updateHeader();},30000);
 </script>
 </body>
 </html>
