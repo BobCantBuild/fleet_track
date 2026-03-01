@@ -10,25 +10,17 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow:hidden}
-
-    /* Header */
     #header{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.4);height:64px}
     #header h1{font-size:1.4rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:0.5rem}
     #header-stats{display:flex;gap:1.5rem}
     .hstat{text-align:center}
     .hstat span{display:block;font-size:1.4rem;font-weight:700;color:#60a5fa}
     .hstat small{font-size:0.7rem;color:#93c5fd;text-transform:uppercase}
-
-    /* Layout */
     #layout{display:grid;grid-template-columns:400px 1fr;height:calc(100vh - 64px)}
-
-    /* Sidebar */
-    #sidebar{background:#1e293b;display:flex;flex-direction:column;border-right:1px solid #334155;overflow:hidden}
+    #sidebar{background:#1e293b;display:flex;flex-direction:column;border-right:1px solid #334155;overflow:hidden;position:relative}
     #search-wrap{padding:0.75rem 1rem;border-bottom:1px solid #334155}
     #search{width:100%;padding:0.5rem 0.75rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:0.85rem;outline:none}
     #search:focus{border-color:#3b82f6}
-
-    /* Franchise tabs */
     #franchise-tabs{display:flex;gap:0.4rem;padding:0.75rem 1rem;border-bottom:1px solid #334155;flex-wrap:wrap}
     .ftab{padding:0.3rem 0.7rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s;font-weight:500}
     .ftab:hover{border-color:#3b82f6;color:#60a5fa}
@@ -36,18 +28,12 @@
     .ftab.mfbs.active{background:#8b5cf6;border-color:#8b5cf6}
     .ftab.promptcare.active{background:#10b981;border-color:#10b981}
     .ftab.krisma.active{background:#f59e0b;border-color:#f59e0b}
-
-    /* Status filter */
     #status-tabs{display:flex;gap:0.4rem;padding:0.5rem 1rem;border-bottom:1px solid #334155}
     .stab{padding:0.25rem 0.6rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
     .stab.active{background:#1e3a8a;border-color:#3b82f6;color:#60a5fa}
-
-    /* Tech list */
     #tech-list{flex:1;overflow-y:auto;padding:0.5rem}
     #tech-list::-webkit-scrollbar{width:4px}
     #tech-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
-
-    /* Tech card */
     .tech-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.4rem;cursor:pointer;transition:all 0.2s;border-left:4px solid #334155}
     .tech-card:hover{border-color:#3b82f6;transform:translateX(2px)}
     .tech-card.active-status{border-left-color:#22c55e}
@@ -65,57 +51,43 @@
     .tc-stat{background:#1e293b;border-radius:6px;padding:0.35rem;text-align:center}
     .tc-stat span{display:block;font-size:0.82rem;font-weight:700;color:#60a5fa}
     .tc-stat small{font-size:0.62rem;color:#64748b;text-transform:uppercase}
-
-    /* Detail panel */
-    #detail-panel{position:absolute;bottom:0;left:0;width:400px;background:#1e293b;border-top:2px solid #3b82f6;border-right:1px solid #334155;z-index:20;max-height:55vh;display:none;flex-direction:column;border-radius:0 16px 0 0}
+    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:60vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.4)}
     #detail-panel.open{display:flex}
     #dp-header{padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    #dp-title{font-weight:700;font-size:1rem;color:#f1f5f9}
-    #dp-close{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.2rem;padding:0.25rem}
-    #dp-close:hover{color:#f1f5f9}
-    #dp-body{overflow-y:auto;padding:1rem 1.25rem;flex:1}
+    #dp-name{font-weight:700;font-size:0.95rem;color:#f1f5f9}
+    #dp-franchise{font-size:0.75rem;color:#64748b;margin-top:2px}
+    #dp-close{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.3rem;line-height:1;padding:0.2rem 0.4rem;border-radius:6px}
+    #dp-close:hover{background:#334155;color:#f1f5f9}
+    #dp-body{overflow-y:auto;padding:1rem 1.25rem 1.5rem;flex:1}
     #dp-body::-webkit-scrollbar{width:4px}
     #dp-body::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
-
-    /* Punch times */
-    .punch-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem}
-    .punch-box{background:#0f172a;border-radius:10px;padding:0.75rem;text-align:center;border:1px solid #334155}
-    .punch-box .label{font-size:0.7rem;color:#64748b;text-transform:uppercase;margin-bottom:0.25rem}
-    .punch-box .value{font-size:1rem;font-weight:700;color:#f1f5f9}
-    .punch-box.in .value{color:#22c55e}
-    .punch-box.out .value{color:#ef4444}
-
-    /* Timeline */
-    .timeline-title{font-size:0.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.6rem;font-weight:600}
-    .timeline{position:relative;padding-left:1.25rem}
-    .timeline::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;background:#334155}
-    .tl-item{position:relative;margin-bottom:0.6rem;padding:0.5rem 0.75rem;background:#0f172a;border-radius:8px;border:1px solid #334155}
-    .tl-item::before{content:'';position:absolute;left:-1.25rem;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b}
-    .tl-time{font-size:0.7rem;color:#64748b}
-    .tl-coords{font-size:0.78rem;color:#94a3b8;margin-top:2px}
-    .tl-km{font-size:0.72rem;color:#60a5fa;margin-top:2px}
-
-    /* Map */
-    #map-wrap{position:relative;flex:1}
+    .punch-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem}
+    .punch-box{background:#0f172a;border-radius:12px;padding:0.9rem;text-align:center;border:1px solid #334155}
+    .punch-box .plabel{font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem;font-weight:600}
+    .punch-box .pvalue{font-size:1rem;font-weight:700}
+    .punch-box.in  .pvalue{color:#22c55e}
+    .punch-box.out .pvalue{color:#ef4444}
+    .section-title{font-size:0.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;font-weight:600;display:flex;align-items:center;gap:0.4rem}
+    .timeline{position:relative;padding-left:1.5rem}
+    .timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,#3b82f6,#1e3a8a)}
+    .tl-item{position:relative;margin-bottom:0.6rem;padding:0.6rem 0.75rem;background:#0f172a;border-radius:10px;border:1px solid #334155;transition:border-color 0.2s}
+    .tl-item:hover{border-color:#3b82f6}
+    .tl-item::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b;box-shadow:0 0 6px rgba(59,130,246,0.5)}
+    .tl-item:first-child::before{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.5)}
+    .tl-time{font-size:0.72rem;color:#94a3b8;font-weight:600}
+    .tl-coords{font-size:0.78rem;color:#cbd5e1;margin-top:3px}
+    .tl-km{font-size:0.72rem;color:#60a5fa;margin-top:3px;font-weight:600}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1rem;color:#475569;text-align:center}
+    .empty-state .icon{font-size:2.5rem;margin-bottom:0.75rem}
+    #map-wrap{position:relative}
     #map{width:100%;height:100%}
     #map-overlay{position:absolute;top:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:12px;padding:0.75rem 1rem;border:1px solid #334155;z-index:5;min-width:180px;backdrop-filter:blur(10px)}
     #map-overlay h3{font-size:0.7rem;color:#94a3b8;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
-
-    /* Empty */
-    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;color:#475569;text-align:center}
-    .empty-state .icon{font-size:2.5rem;margin-bottom:0.75rem}
-
-    @media(max-width:768px){
-      body{overflow:auto}
-      #layout{grid-template-columns:1fr;height:auto}
-      #sidebar{height:50vh}
-      #detail-panel{width:100%;border-radius:16px 16px 0 0}
-    }
+    @media(max-width:768px){body{overflow:auto}#layout{grid-template-columns:1fr;grid-template-rows:auto 50vh}#header-stats{display:none}#detail-panel{width:100%}}
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div id="header">
   <h1>🚛 Fleet Track Dashboard</h1>
   <div id="header-stats">
@@ -127,57 +99,49 @@
 </div>
 
 <div id="layout">
-  <!-- SIDEBAR -->
-  <div id="sidebar" style="position:relative">
-    <!-- Search -->
+  <div id="sidebar">
     <div id="search-wrap">
       <input id="search" type="text" placeholder="🔍 Search technician..." oninput="renderSidebar()"/>
     </div>
-
-    <!-- Franchise tabs -->
     <div id="franchise-tabs">
-      <button class="ftab active"        onclick="setFranchise('all',this)">All</button>
-      <button class="ftab mfbs"          onclick="setFranchise('MFBS',this)">MFBS</button>
-      <button class="ftab promptcare"    onclick="setFranchise('PromptCare',this)">PromptCare</button>
-      <button class="ftab krisma"        onclick="setFranchise('Krisma Tech',this)">Krisma Tech</button>
+      <button class="ftab active"     onclick="setFranchise('all',this)">All</button>
+      <button class="ftab mfbs"       onclick="setFranchise('MFBS',this)">MFBS</button>
+      <button class="ftab promptcare" onclick="setFranchise('PromptCare',this)">PromptCare</button>
+      <button class="ftab krisma"     onclick="setFranchise('Krisma Tech',this)">Krisma Tech</button>
     </div>
-
-    <!-- Status tabs -->
     <div id="status-tabs">
       <button class="stab active" onclick="setStatus('all',this)">All</button>
       <button class="stab"        onclick="setStatus('active',this)">🟢 Live</button>
       <button class="stab"        onclick="setStatus('offline',this)">🔴 Offline</button>
     </div>
-
-    <!-- Tech cards list -->
     <div id="tech-list"></div>
 
-    <!-- Detail panel (slide up) -->
+    <!-- Detail panel slides up inside sidebar -->
     <div id="detail-panel">
       <div id="dp-header">
-        <div id="dp-title">Technician Detail</div>
+        <div>
+          <div id="dp-name">Technician</div>
+          <div id="dp-franchise"></div>
+        </div>
         <button id="dp-close" onclick="closeDetail()">✕</button>
       </div>
       <div id="dp-body">
         <div class="punch-grid">
           <div class="punch-box in">
-            <div class="label">⏱ Punch IN</div>
-            <div class="value" id="dp-punch-in">--</div>
+            <div class="plabel">⏱ Punch IN</div>
+            <div class="pvalue" id="dp-punch-in">--</div>
           </div>
           <div class="punch-box out">
-            <div class="label">⏹ Punch OUT</div>
-            <div class="value" id="dp-punch-out">--</div>
+            <div class="plabel">⏹ Punch OUT</div>
+            <div class="pvalue" id="dp-punch-out">--</div>
           </div>
         </div>
-        <div class="timeline-title">📍 Movement History</div>
-        <div class="timeline" id="dp-timeline">
-          <div style="color:#64748b;font-size:0.85rem">Loading history...</div>
-        </div>
+        <div class="section-title">📍 Movement History</div>
+        <div class="timeline" id="dp-timeline"></div>
       </div>
     </div>
   </div>
 
-  <!-- MAP -->
   <div id="map-wrap">
     <div id="map"></div>
     <div id="map-overlay">
@@ -188,7 +152,6 @@
 </div>
 
 <script>
-  // ── FIREBASE CONFIG ──────────────────────────────────────────────────────
   const firebaseConfig = {
     apiKey: "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
     authDomain: "fleet-track-486de.firebaseapp.com",
@@ -200,53 +163,59 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ── STATE ────────────────────────────────────────────────────────────────
   let map, markers = {}, infoWindows = {};
-  let techData     = {};
-  let franchiseFilter = 'all';
-  let statusFilter    = 'all';
-  let selectedTechId  = null;
-  let trailUnsubscribe = null;
+  let techData = {}, franchiseFilter = 'all', statusFilter = 'all';
+  let selectedTechId = null, trailUnsub = null;
 
-  const avatarColors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
-  const avatarColor  = name => avatarColors[(name||'?').charCodeAt(0) % avatarColors.length];
-  const franchiseColor = {
-    'MFBS':       '#8b5cf6',
-    'PromptCare': '#10b981',
-    'Krisma Tech':'#f59e0b',
-  };
+  const fColors = {'MFBS':'#8b5cf6','PromptCare':'#10b981','Krisma Tech':'#f59e0b'};
+  const aColors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
+  const aColor  = n => fColors[n] || aColors[(n||'?').charCodeAt(0) % aColors.length];
 
-  // ── INIT MAP ─────────────────────────────────────────────────────────────
+  // ── FORMAT TIME: 12hr AM/PM, no seconds ──────────────────────────────────
+  function formatTime(date) {
+    if (!date) return '0';
+    return date.toLocaleTimeString('en-IN', {
+      hour:   '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+
+  function timeAgo(date) {
+    if (!date) return '--';
+    const s = Math.floor((new Date() - date) / 1000);
+    if (s < 60)   return s + 's';
+    if (s < 3600) return Math.floor(s / 60) + 'm';
+    return Math.floor(s / 3600) + 'h';
+  }
+
+  // ── MAP INIT ─────────────────────────────────────────────────────────────
   function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
       zoom: 12,
       center: {lat: 8.6, lng: 76.9},
       styles: [
-        {elementType:'geometry',stylers:[{color:'#1a2332'}]},
-        {elementType:'labels.text.stroke',stylers:[{color:'#242f3e'}]},
-        {elementType:'labels.text.fill',stylers:[{color:'#746855'}]},
-        {featureType:'road',elementType:'geometry',stylers:[{color:'#2c3e50'}]},
-        {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9ca5b3'}]},
-        {featureType:'water',elementType:'geometry',stylers:[{color:'#17263c'}]},
-        {featureType:'poi',stylers:[{visibility:'off'}]},
+        {elementType:'geometry',            stylers:[{color:'#1a2332'}]},
+        {elementType:'labels.text.stroke',  stylers:[{color:'#242f3e'}]},
+        {elementType:'labels.text.fill',    stylers:[{color:'#746855'}]},
+        {featureType:'road',elementType:'geometry',           stylers:[{color:'#2c3e50'}]},
+        {featureType:'road',elementType:'labels.text.fill',   stylers:[{color:'#9ca5b3'}]},
+        {featureType:'water',elementType:'geometry',          stylers:[{color:'#17263c'}]},
+        {featureType:'poi',                 stylers:[{visibility:'off'}]},
       ]
     });
-    startLiveTracking();
+    startTracking();
   }
 
-  // ── LIVE TRACKING ────────────────────────────────────────────────────────
-  function startLiveTracking() {
-    db.collection('locations').onSnapshot(snapshot => {
+  // ── LIVE LISTENER ────────────────────────────────────────────────────────
+  function startTracking() {
+    db.collection('locations').onSnapshot(snap => {
       techData = {};
-      snapshot.forEach(doc => { techData[doc.id] = {id: doc.id, ...doc.data()}; });
-      renderAll();
+      snap.forEach(doc => { techData[doc.id] = {id: doc.id, ...doc.data()}; });
+      renderSidebar();
+      renderMarkers();
+      updateHeader();
     });
-  }
-
-  function renderAll() {
-    renderSidebar();
-    renderMarkers();
-    updateHeader();
   }
 
   // ── SIDEBAR ──────────────────────────────────────────────────────────────
@@ -255,10 +224,10 @@
     const search = document.getElementById('search').value.toLowerCase();
     list.innerHTML = '';
 
-    const sorted = Object.values(techData).sort((a,b) => {
-      if (a.status==='active' && b.status!=='active') return -1;
-      if (a.status!=='active' && b.status==='active') return  1;
-      return (a.name||'').localeCompare(b.name||'');
+    const sorted = Object.values(techData).sort((a, b) => {
+      if (a.status === 'active' && b.status !== 'active') return -1;
+      if (a.status !== 'active' && b.status === 'active') return  1;
+      return (a.name || '').localeCompare(b.name || '');
     });
 
     let count = 0;
@@ -267,9 +236,7 @@
       if (franchiseFilter !== 'all' && tech.franchise !== franchiseFilter) return;
       if (statusFilter === 'active'  && !isActive) return;
       if (statusFilter === 'offline' &&  isActive) return;
-      if (search) {
-        if (!`${tech.name} ${tech.franchise}`.toLowerCase().includes(search)) return;
-      }
+      if (search && !`${tech.name} ${tech.franchise}`.toLowerCase().includes(search)) return;
       count++;
       list.appendChild(buildCard(tech, isActive));
     });
@@ -279,18 +246,18 @@
         <div class="empty-state">
           <div class="icon">🚛</div>
           <div>No technicians found</div>
-          <small>Waiting for Punch IN...</small>
+          <small style="margin-top:4px">Waiting for Punch IN...</small>
         </div>`;
     }
   }
 
-  // ── TECH CARD ────────────────────────────────────────────────────────────
+  // ── BUILD CARD ───────────────────────────────────────────────────────────
   function buildCard(tech, isActive) {
     const div      = document.createElement('div');
     const initials = (tech.name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-    const bg       = franchiseColor[tech.franchise] || avatarColor(tech.name||'?');
-    const km       = (tech.totalKm||0).toFixed(1);
-    const spd      = ((tech.speed||0)*3.6).toFixed(0);
+    const bg       = aColor(tech.franchise || tech.name || '?');
+    const km       = (tech.totalKm || 0).toFixed(1);
+    const spd      = ((tech.speed  || 0) * 3.6).toFixed(0);
     const upd      = tech.updatedAt?.toDate ? timeAgo(tech.updatedAt.toDate()) : '--';
 
     div.className = `tech-card ${isActive?'active-status':'offline-status'} ${tech.id===selectedTechId?'selected':''}`;
@@ -298,8 +265,8 @@
       <div class="tc-row">
         <div class="tc-avatar" style="background:${bg}">${initials}</div>
         <div class="tc-info">
-          <div class="tc-name">${tech.name||'Unknown'}</div>
-          <div class="tc-franchise">${tech.franchise||''}</div>
+          <div class="tc-name">${tech.name || 'Unknown'}</div>
+          <div class="tc-franchise">${tech.franchise || ''}</div>
         </div>
         <span class="tc-badge ${isActive?'active':'offline'}">${isActive?'● LIVE':'● OFF'}</span>
       </div>
@@ -308,12 +275,11 @@
         <div class="tc-stat"><span>${spd}</span><small>km/h</small></div>
         <div class="tc-stat"><span>${upd}</span><small>updated</small></div>
       </div>`;
-
     div.onclick = () => openDetail(tech.id);
     return div;
   }
 
-  // ── OPEN DETAIL PANEL ────────────────────────────────────────────────────
+  // ── OPEN DETAIL ──────────────────────────────────────────────────────────
   async function openDetail(techId) {
     selectedTechId = techId;
     renderSidebar();
@@ -321,45 +287,53 @@
     const tech = techData[techId];
     if (!tech) return;
 
-    // Focus map
+    // Map focus
     if (tech.lat && tech.lng) {
       map.panTo({lat: tech.lat, lng: tech.lng});
       map.setZoom(16);
       Object.values(infoWindows).forEach(iw => iw.close());
-      if (infoWindows[techId]) infoWindows[techId].open(map, markers[techId]);
+      infoWindows[techId]?.open(map, markers[techId]);
     }
 
-    // Update overlay
+    // Overlay
     document.getElementById('overlay-info').innerHTML = `
       <strong style="color:#f1f5f9">${tech.name}</strong><br>
       <span style="color:#94a3b8">${tech.franchise}</span><br>
       <span style="color:#60a5fa">🛣️ ${(tech.totalKm||0).toFixed(1)} km</span>`;
 
-    // Show detail panel
-    document.getElementById('dp-title').textContent = `${tech.name} — ${tech.franchise}`;
-    document.getElementById('dp-punch-in').textContent  = '...';
-    document.getElementById('dp-punch-out').textContent = '...';
+    // Show panel
+    document.getElementById('dp-name').textContent      = tech.name || 'Unknown';
+    document.getElementById('dp-franchise').textContent = tech.franchise || '';
+    document.getElementById('dp-punch-in').textContent  = 'Loading...';
+    document.getElementById('dp-punch-out').textContent = 'Loading...';
     document.getElementById('dp-timeline').innerHTML    =
-      '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">Loading...</div>';
+      '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">Loading history...</div>';
     document.getElementById('detail-panel').classList.add('open');
 
-    // Fetch session for punch in/out
+    // ── Fetch session (NO orderBy → no index required) ──────────────────
     try {
-      const sessionSnap = await db.collection('sessions')
+      const snap = await db.collection('sessions')
         .where('techId', '==', techId)
-        .orderBy('punchIn', 'desc')
-        .limit(1)
         .get();
 
-      if (!sessionSnap.empty) {
-        const session = sessionSnap.docs[0].data();
-        const pIn  = session.punchIn?.toDate
-          ? formatTime(session.punchIn.toDate()) : '0';
-        const pOut = session.punchOut?.toDate
-          ? formatTime(session.punchOut.toDate()) : 'Active';
+      // Find latest session manually
+      let latest = null;
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (!latest) {
+          latest = d;
+        } else {
+          const existingTime = latest.punchIn?.toDate?.()  || new Date(0);
+          const currentTime  = d.punchIn?.toDate?.()       || new Date(0);
+          if (currentTime > existingTime) latest = d;
+        }
+      });
 
-        document.getElementById('dp-punch-in').textContent  = pIn;
-        document.getElementById('dp-punch-out').textContent = pOut;
+      if (latest) {
+        document.getElementById('dp-punch-in').textContent =
+          latest.punchIn?.toDate ? formatTime(latest.punchIn.toDate()) : '0';
+        document.getElementById('dp-punch-out').textContent =
+          latest.punchOut?.toDate ? formatTime(latest.punchOut.toDate()) : 'Still Active';
       } else {
         document.getElementById('dp-punch-in').textContent  = '0';
         document.getElementById('dp-punch-out').textContent = '0';
@@ -369,17 +343,16 @@
       document.getElementById('dp-punch-out').textContent = '0';
     }
 
-    // Load movement trail
     loadTrail(techId);
   }
 
   // ── LOAD TRAIL ───────────────────────────────────────────────────────────
   function loadTrail(techId) {
-    if (trailUnsubscribe) { trailUnsubscribe(); trailUnsubscribe = null; }
+    if (trailUnsub) { trailUnsub(); trailUnsub = null; }
 
     const timeline = document.getElementById('dp-timeline');
 
-    trailUnsubscribe = db
+    trailUnsub = db
       .collection('locations').doc(techId)
       .collection('trail')
       .orderBy('timestamp', 'desc')
@@ -390,15 +363,13 @@
             '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">No movement recorded yet.</div>';
           return;
         }
-
         timeline.innerHTML = '';
         snap.forEach(doc => {
           const d   = doc.data();
           const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
           const lat = d.lat?.toFixed(5) || '--';
           const lng = d.lng?.toFixed(5) || '--';
-          const km  = (d.totalKm||0).toFixed(2);
-
+          const km  = (d.totalKm || 0).toFixed(2);
           const item = document.createElement('div');
           item.className = 'tl-item';
           item.innerHTML = `
@@ -407,41 +378,76 @@
             <div class="tl-km">🛣️ ${km} km cumulative</div>`;
           timeline.appendChild(item);
         });
+      }, () => {
+        // Fallback if index missing for trail
+        db.collection('locations').doc(techId)
+          .collection('trail')
+          .limit(30)
+          .get()
+          .then(snap => {
+            if (snap.empty) {
+              timeline.innerHTML =
+                '<div style="color:#64748b;font-size:0.85rem">No movement yet.</div>';
+              return;
+            }
+            // Sort client-side
+            const docs = [];
+            snap.forEach(d => docs.push(d.data()));
+            docs.sort((a,b) => {
+              const ta = a.timestamp?.toDate?.() || new Date(0);
+              const tb = b.timestamp?.toDate?.() || new Date(0);
+              return tb - ta;
+            });
+            timeline.innerHTML = '';
+            docs.forEach(d => {
+              const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
+              const lat = d.lat?.toFixed(5) || '--';
+              const lng = d.lng?.toFixed(5) || '--';
+              const km  = (d.totalKm||0).toFixed(2);
+              const item = document.createElement('div');
+              item.className = 'tl-item';
+              item.innerHTML = `
+                <div class="tl-time">🕐 ${ts}</div>
+                <div class="tl-coords">📍 ${lat}°, ${lng}°</div>
+                <div class="tl-km">🛣️ ${km} km cumulative</div>`;
+              timeline.appendChild(item);
+            });
+          });
       });
   }
 
   // ── CLOSE DETAIL ─────────────────────────────────────────────────────────
   function closeDetail() {
     document.getElementById('detail-panel').classList.remove('open');
-    if (trailUnsubscribe) { trailUnsubscribe(); trailUnsubscribe = null; }
+    if (trailUnsub) { trailUnsub(); trailUnsub = null; }
     selectedTechId = null;
     document.getElementById('overlay-info').textContent = 'Click a card to focus';
     renderSidebar();
   }
 
-  // ── MAP MARKERS ──────────────────────────────────────────────────────────
+  // ── MARKERS ──────────────────────────────────────────────────────────────
   function renderMarkers() {
     Object.values(markers).forEach(m => m.setMap(null));
     Object.values(infoWindows).forEach(iw => iw.close());
     markers = {}; infoWindows = {};
 
-    const bounds = new google.maps.LatLngBounds();
+    const bounds    = new google.maps.LatLngBounds();
     let   hasBounds = false;
 
     Object.values(techData).forEach(tech => {
       if (!tech.lat || !tech.lng) return;
-
       const isActive = tech.status === 'active';
-      const bg       = franchiseColor[tech.franchise] || avatarColor(tech.name||'?');
-      const initial  = (tech.name||'?').charAt(0).toUpperCase();
-      const km       = (tech.totalKm||0).toFixed(1);
+      const bg       = aColor(tech.franchise || tech.name || '?');
+      const initial  = (tech.name || '?').charAt(0).toUpperCase();
+      const km       = (tech.totalKm || 0).toFixed(1);
 
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="42" height="50" viewBox="0 0 42 50">
-          <circle cx="21" cy="19" r="18" fill="${isActive?bg:'#6b7280'}" stroke="#ffffff" stroke-width="2.5"/>
+          <circle cx="21" cy="19" r="18" fill="${isActive?bg:'#6b7280'}"
+                  stroke="#ffffff" stroke-width="2.5"/>
           <polygon points="13,35 29,35 21,48" fill="${isActive?bg:'#6b7280'}"/>
-          <text x="21" y="25" text-anchor="middle" fill="white" font-size="14"
-                font-family="Arial" font-weight="bold">${initial}</text>
+          <text x="21" y="25" text-anchor="middle" fill="white"
+                font-size="14" font-family="Arial" font-weight="bold">${initial}</text>
         </svg>`;
 
       const marker = new google.maps.Marker({
@@ -465,7 +471,7 @@
             <div>🛣️ ${km} km</div>
             <div>⚡ ${((tech.speed||0)*3.6).toFixed(0)} km/h</div>
             <div style="color:${isActive?'#16a34a':'#dc2626'};font-weight:bold;margin-top:4px">
-              ${isActive?'🟢 LIVE':'🔴 Offline'}
+              ${isActive ? '🟢 LIVE' : '🔴 Offline'}
             </div>
           </div>`,
       });
@@ -478,7 +484,6 @@
 
       markers[tech.id]     = marker;
       infoWindows[tech.id] = iw;
-
       bounds.extend({lat: tech.lat, lng: tech.lng});
       hasBounds = true;
     });
@@ -489,45 +494,31 @@
   // ── HEADER STATS ─────────────────────────────────────────────────────────
   function updateHeader() {
     const all    = Object.values(techData);
-    const active = all.filter(t => t.status==='active');
-    const km     = all.reduce((s,t) => s+(t.totalKm||0), 0);
+    const active = all.filter(t => t.status === 'active');
+    const km     = all.reduce((s, t) => s + (t.totalKm || 0), 0);
     document.getElementById('active-count').textContent = active.length;
     document.getElementById('total-count').textContent  = all.length;
     document.getElementById('total-km').textContent     = km.toFixed(1);
     document.getElementById('last-updated').textContent =
-      new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
   }
 
   // ── FILTERS ──────────────────────────────────────────────────────────────
   function setFranchise(val, el) {
     franchiseFilter = val;
-    document.querySelectorAll('#franchise-tabs .ftab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#franchise-tabs .ftab')
+            .forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     renderSidebar();
   }
   function setStatus(val, el) {
     statusFilter = val;
-    document.querySelectorAll('#status-tabs .stab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#status-tabs .stab')
+            .forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     renderSidebar();
   }
 
-  // ── HELPERS ──────────────────────────────────────────────────────────────
-  function timeAgo(date) {
-    if (!date) return '--';
-    const s = Math.floor((new Date()-date)/1000);
-    if (s < 60)   return s+'s';
-    if (s < 3600) return Math.floor(s/60)+'m';
-    return Math.floor(s/3600)+'h';
-  }
-  function formatTime(date) {
-    if (!date) return '0';
-    return date.toLocaleTimeString('en-IN',{
-      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true
-    });
-  }
-
-  // Header refresh
   setInterval(updateHeader, 30000);
 </script>
 </body>
