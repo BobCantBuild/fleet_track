@@ -1,132 +1,409 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Fleet Track Dashboard</title>
-  <!-- Firebase SDKs -->
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fleet Track — Executive Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore-compat.js"></script>
-  <!-- Google Maps -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnH0XEDxgUOdxmXWtA7DDJ6wg7Qpnsumk&callback=initMap" async defer></script>
   <style>
+    /* ── Reset ── */
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;color:#333}
-    #header{background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);color:white;padding:2rem;border-radius:0 0 24px 24px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
-    h1{font-size:2.5rem;margin-bottom:0.5rem}
-    #tech-list{display:grid;gap:1rem;max-width:1200px;margin:2rem auto;padding:2rem;background:white;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
-    .tech{padding:1.5rem;border-radius:16px;background:#f8f9fa;border-left:6px solid #4CAF50;position:relative;overflow:hidden;transition:all 0.3s}
-    .tech.offline{border-left-color:#f44336;background:#ffebee}
-    .tech:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,0.2)}
-    .status-dot{font-size:1.5rem;margin-right:0.5rem}
-    #map{height:600px;width:100%;border-radius:24px;margin-top:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-    .loading{min-height:200px;display:flex;align-items:center;justify-content:center;color:#666;font-size:1.2rem}
-    @media(max-width:768px){#tech-list{margin:1rem;padding:1rem;gap:0.5rem}#map{height:400px}}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+
+    /* ── Header ── */
+    #header{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+    #header h1{font-size:1.5rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:0.5rem}
+    #header-stats{display:flex;gap:1.5rem}
+    .hstat{text-align:center}
+    .hstat span{display:block;font-size:1.5rem;font-weight:700;color:#60a5fa}
+    .hstat small{font-size:0.75rem;color:#93c5fd}
+
+    /* ── Layout ── */
+    #layout{display:grid;grid-template-columns:380px 1fr;height:calc(100vh - 70px);overflow:hidden}
+
+    /* ── Sidebar ── */
+    #sidebar{background:#1e293b;overflow-y:auto;border-right:1px solid #334155}
+    #sidebar-header{padding:1rem 1.25rem;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#1e293b;z-index:10}
+    #sidebar-header h2{font-size:0.9rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em}
+    #search{width:100%;margin:0.75rem 1.25rem;width:calc(100% - 2.5rem);padding:0.5rem 0.75rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:0.85rem;outline:none}
+    #search:focus{border-color:#3b82f6}
+    #filter-tabs{display:flex;gap:0.5rem;padding:0 1.25rem 0.75rem;flex-wrap:wrap}
+    .ftab{padding:0.3rem 0.75rem;border-radius:20px;font-size:0.75rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
+    .ftab.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+    #tech-list{padding:0.5rem}
+
+    /* ── Tech Card ── */
+    .tech-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:1rem;margin-bottom:0.5rem;cursor:pointer;transition:all 0.2s;border-left:4px solid #334155}
+    .tech-card:hover{border-color:#3b82f6;transform:translateX(3px)}
+    .tech-card.active{border-left-color:#22c55e}
+    .tech-card.offline{border-left-color:#ef4444}
+    .tech-card.selected{background:#1e3a8a;border-color:#3b82f6}
+    .tc-header{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem}
+    .tc-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0}
+    .tc-info{flex:1;min-width:0}
+    .tc-name{font-weight:600;font-size:0.9rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tc-franchise{font-size:0.75rem;color:#64748b}
+    .tc-status{font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:20px;font-weight:600}
+    .tc-status.active{background:#166534;color:#86efac}
+    .tc-status.offline{background:#7f1d1d;color:#fca5a5}
+    .tc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem}
+    .tc-stat{background:#1e293b;border-radius:6px;padding:0.4rem;text-align:center}
+    .tc-stat span{display:block;font-size:0.85rem;font-weight:700;color:#60a5fa}
+    .tc-stat small{font-size:0.65rem;color:#64748b}
+
+    /* ── Map ── */
+    #map{width:100%;height:100%}
+
+    /* ── Map overlay ── */
+    #map-overlay{position:absolute;top:1rem;right:1rem;background:#1e293b;border-radius:12px;padding:0.75rem 1rem;border:1px solid #334155;z-index:5;min-width:200px}
+    #map-overlay h3{font-size:0.8rem;color:#94a3b8;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em}
+    .map-wrapper{position:relative}
+
+    /* ── Empty state ── */
+    #empty{display:none;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;color:#475569;text-align:center}
+    #empty .icon{font-size:3rem;margin-bottom:1rem}
+
+    /* ── Scrollbar ── */
+    #sidebar::-webkit-scrollbar{width:4px}
+    #sidebar::-webkit-scrollbar-track{background:#0f172a}
+    #sidebar::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+
+    /* ── Responsive ── */
+    @media(max-width:768px){
+      #layout{grid-template-columns:1fr;grid-template-rows:50vh 1fr}
+      #sidebar{overflow-y:auto;height:100%}
+      #header-stats{display:none}
+    }
   </style>
 </head>
 <body>
-  <div id="header">
-    <h1>🚛 Fleet Track Dashboard</h1>
-    <p>Live technician locations • Trivandrum Division</p>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>🚛 Fleet Track Dashboard</h1>
+  <div id="header-stats">
+    <div class="hstat">
+      <span id="active-count">0</span>
+      <small>Active Now</small>
+    </div>
+    <div class="hstat">
+      <span id="total-count">0</span>
+      <small>Total Techs</small>
+    </div>
+    <div class="hstat">
+      <span id="total-km">0</span>
+      <small>Total km Today</small>
+    </div>
+    <div class="hstat">
+      <span id="last-updated">--</span>
+      <small>Last Update</small>
+    </div>
   </div>
-  
-  <div id="tech-list" class="loading">Connecting to live data...</div>
-  <div id="map"></div>
+</div>
 
-  <script>
-    // YOUR FIREBASE CONFIG
-    const firebaseConfig = {
-      apiKey: "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
-      authDomain: "fleet-track-486de.firebaseapp.com",
-      projectId: "fleet-track-486de",
-      storageBucket: "fleet-track-486de.firebasestorage.app",
-      messagingSenderId: "778334362913",
-      appId: "1:778334362913:web:a44beb20a97af383043260",
-      measurementId: "G-9CR3F7TWJT"
-    };
+<!-- MAIN LAYOUT -->
+<div id="layout">
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h2>Technicians</h2>
+    </div>
+    <input id="search" type="text" placeholder="🔍 Search technician or franchise..." oninput="filterCards()"/>
+    <div id="filter-tabs">
+      <button class="ftab active" onclick="setFilter('all', this)">All</button>
+      <button class="ftab" onclick="setFilter('active', this)">🟢 Active</button>
+      <button class="ftab" onclick="setFilter('offline', this)">🔴 Offline</button>
+    </div>
+    <div id="tech-list">
+      <div id="empty">
+        <div class="icon">🚛</div>
+        <div>No technicians found</div>
+        <small>Waiting for Punch IN...</small>
+      </div>
+    </div>
+  </div>
 
-    // Google Maps
-    let map, bounds, markers = {};
-    function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 12,
-        center: {lat: 8.6, lng: 76.9}, // Trivandrum
-        mapTypeId: 'roadmap',
-        styles: [
-          {"featureType":"poi","stylers":[{"visibility":"off"}]},
-          {"featureType":"transit","stylers":[{"visibility":"off"}]}
-        ]
-      });
-      bounds = new google.maps.LatLngBounds();
-    }
+  <!-- MAP -->
+  <div class="map-wrapper" style="position:relative">
+    <div id="map"></div>
+    <div id="map-overlay">
+      <h3>Live Map</h3>
+      <div id="overlay-info" style="font-size:0.8rem;color:#94a3b8">
+        Click a technician to focus
+      </div>
+    </div>
+  </div>
 
-    // Live technician tracking
-    const techList = document.getElementById('tech-list');
-    db.collection('locations').onSnapshot(snapshot => {
-      techList.className = '';
-      techList.innerHTML = '';
-      markers = {}; // Reset markers
-      
-      let activeCount = 0;
-      
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const isActive = data.status === 'active';
-        if (isActive) activeCount++;
-        
-        // Technician card
-        const techDiv = document.createElement('div');
-        techDiv.className = `tech ${isActive ? '' : 'offline'}`;
-        techDiv.innerHTML = `
-          <div>
-            <span class="status-dot" style="color:${isActive ? '#4CAF50' : '#f44336'}">●</span>
-            <strong>${data.name || 'Unknown Tech'}</strong>
-          </div>
-          <div style="color:#666;margin:0.25rem 0">${data.franchise || 'No franchise'}</div>
-          <div style="font-size:1.1em;margin:0.5rem 0">
-            📍 <strong>${data.lat?.toFixed(4) || '?'}°, ${data.lng?.toFixed(4) || '?'}°</strong>
-          </div>
-          <div style="color:#2196F3;font-weight:600;font-size:1.1em">
-            🛣️ ${data.totalKm ? data.totalKm.toFixed(1) + ' km' : '0 km'}
-          </div>
-        `;
-        techList.appendChild(techDiv);
-        
-        // Map marker
-        if (data.lat && data.lng) {
-          const position = {lat: data.lat, lng: data.lng};
-          markers[data.name] = new google.maps.Marker({
-            position,
-            map,
-            title: `${data.name} (${data.totalKm || 0}km)`,
-            icon: {
-              url: `https://maps.google.com/mapfiles/ms/icons/${isActive ? 'green' : 'red'}-dot.png`,
-              scaledSize: new google.maps.Size(32, 32)
-            }
-          });
-          bounds.extend(position);
-        }
-      });
-      
-      // Update map bounds
-      if (Object.keys(markers).length > 0) {
-        map.fitBounds(bounds);
-      } else {
-        techList.innerHTML = `
-          <div style="text-align:center;padding:3rem;color:#666">
-            <div style="font-size:3rem;margin-bottom:1rem">🚛</div>
-            <div>No technicians active</div>
-            <div style="font-size:0.9rem;margin-top:0.5rem">Punch IN to see live tracking</div>
-          </div>
-        `;
-      }
-      
-      // Header count
-      document.querySelector('#header p').innerHTML = 
-        `Live tracking • ${activeCount} active`;
+</div>
+
+<script>
+  // ── FIREBASE CONFIG ──────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
+    authDomain: "fleet-track-486de.firebaseapp.com",
+    projectId: "fleet-track-486de",
+    storageBucket: "fleet-track-486de.firebasestorage.app",
+    messagingSenderId: "778334362913",
+    appId: "1:778334362913:web:a44beb20a97af383043260",
+    measurementId: "G-9CR3F7TWJT"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // ── GLOBALS ──────────────────────────────────────────────────────────────
+  let map, markers = {}, techData = {}, infoWindows = {};
+  let currentFilter = 'all', selectedTechId = null;
+
+  // Avatar colors per franchise
+  const colors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
+  const avatarColor = (name) => colors[name.charCodeAt(0) % colors.length];
+
+  // ── INIT MAP ─────────────────────────────────────────────────────────────
+  function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 12,
+      center: {lat: 8.6, lng: 76.9},
+      mapTypeId: 'roadmap',
+      disableDefaultUI: false,
+      styles: [
+        {elementType:'geometry', stylers:[{color:'#1a2332'}]},
+        {elementType:'labels.text.stroke', stylers:[{color:'#242f3e'}]},
+        {elementType:'labels.text.fill', stylers:[{color:'#746855'}]},
+        {featureType:'road', elementType:'geometry', stylers:[{color:'#2c3e50'}]},
+        {featureType:'road', elementType:'geometry.stroke', stylers:[{color:'#212a37'}]},
+        {featureType:'road', elementType:'labels.text.fill', stylers:[{color:'#9ca5b3'}]},
+        {featureType:'water', elementType:'geometry', stylers:[{color:'#17263c'}]},
+        {featureType:'poi', stylers:[{visibility:'off'}]},
+      ]
     });
-  </script>
+
+    // Start Firestore listener
+    startLiveTracking();
+  }
+
+  // ── LIVE TRACKING ────────────────────────────────────────────────────────
+  function startLiveTracking() {
+    db.collection('locations').onSnapshot(snapshot => {
+      techData = {};
+      snapshot.forEach(doc => {
+        techData[doc.id] = { id: doc.id, ...doc.data() };
+      });
+      renderAll();
+    });
+  }
+
+  // ── RENDER ALL ───────────────────────────────────────────────────────────
+  function renderAll() {
+    renderSidebar();
+    renderMapMarkers();
+    updateHeaderStats();
+  }
+
+  // ── SIDEBAR ──────────────────────────────────────────────────────────────
+  function renderSidebar() {
+    const list       = document.getElementById('tech-list');
+    const empty      = document.getElementById('empty');
+    const searchVal  = document.getElementById('search').value.toLowerCase();
+    list.innerHTML   = '';
+    list.appendChild(empty);
+
+    let count = 0;
+
+    // Sort: active first, then by name
+    const sorted = Object.values(techData).sort((a, b) => {
+      if (a.status === 'active' && b.status !== 'active') return -1;
+      if (a.status !== 'active' && b.status === 'active') return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    sorted.forEach(tech => {
+      const isActive = tech.status === 'active';
+
+      // Filter by tab
+      if (currentFilter === 'active'  && !isActive) return;
+      if (currentFilter === 'offline' &&  isActive) return;
+
+      // Filter by search
+      if (searchVal) {
+        const haystack = `${tech.name} ${tech.franchise}`.toLowerCase();
+        if (!haystack.includes(searchVal)) return;
+      }
+
+      count++;
+      const card = buildCard(tech, isActive);
+      list.appendChild(card);
+    });
+
+    empty.style.display = count === 0 ? 'flex' : 'none';
+  }
+
+  // ── BUILD CARD ───────────────────────────────────────────────────────────
+  function buildCard(tech, isActive) {
+    const div        = document.createElement('div');
+    const initials   = (tech.name || '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const bg         = avatarColor(tech.name || '?');
+    const isSelected = tech.id === selectedTechId;
+    const km         = (tech.totalKm || 0).toFixed(1);
+    const speed      = ((tech.speed || 0) * 3.6).toFixed(0); // m/s → km/h
+    const updated    = tech.updatedAt?.toDate ? timeAgo(tech.updatedAt.toDate()) : '--';
+
+    div.className = `tech-card ${isActive ? 'active' : 'offline'} ${isSelected ? 'selected' : ''}`;
+    div.innerHTML = `
+      <div class="tc-header">
+        <div class="tc-avatar" style="background:${bg}">${initials}</div>
+        <div class="tc-info">
+          <div class="tc-name">${tech.name || 'Unknown'}</div>
+          <div class="tc-franchise">${tech.franchise || ''}</div>
+        </div>
+        <span class="tc-status ${isActive ? 'active' : 'offline'}">${isActive ? '● LIVE' : '● OFF'}</span>
+      </div>
+      <div class="tc-stats">
+        <div class="tc-stat"><span>${km}</span><small>km</small></div>
+        <div class="tc-stat"><span>${speed}</span><small>km/h</small></div>
+        <div class="tc-stat"><span>${updated}</span><small>updated</small></div>
+      </div>
+    `;
+
+    div.onclick = () => focusTech(tech.id);
+    return div;
+  }
+
+  // ── MAP MARKERS ──────────────────────────────────────────────────────────
+  function renderMapMarkers() {
+    const bounds = new google.maps.LatLngBounds();
+    let hasBounds = false;
+
+    // Remove old markers
+    Object.values(markers).forEach(m => m.setMap(null));
+    markers = {};
+    Object.values(infoWindows).forEach(iw => iw.close());
+    infoWindows = {};
+
+    Object.values(techData).forEach(tech => {
+      if (!tech.lat || !tech.lng) return;
+
+      const isActive = tech.status === 'active';
+      const pos      = {lat: tech.lat, lng: tech.lng};
+      const bg       = avatarColor(tech.name || '?');
+      const km       = (tech.totalKm || 0).toFixed(1);
+
+      // Custom SVG marker
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+          <circle cx="20" cy="18" r="17" fill="${isActive ? bg : '#6b7280'}" stroke="#fff" stroke-width="2.5"/>
+          <polygon points="12,33 28,33 20,46" fill="${isActive ? bg : '#6b7280'}"/>
+          <text x="20" y="24" text-anchor="middle" fill="white" font-size="13" font-family="Arial" font-weight="bold">
+            ${(tech.name || '?').charAt(0).toUpperCase()}
+          </text>
+        </svg>`;
+
+      const marker = new google.maps.Marker({
+        position: pos,
+        map,
+        title: tech.name,
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+          scaledSize: new google.maps.Size(40, 48),
+          anchor: new google.maps.Point(20, 46),
+        },
+        animation: isActive ? google.maps.Animation.DROP : null,
+        zIndex: isActive ? 10 : 1,
+      });
+
+      const iw = new google.maps.InfoWindow({
+        content: `
+          <div style="font-family:sans-serif;padding:4px;min-width:160px">
+            <strong style="font-size:1rem">${tech.name || 'Unknown'}</strong><br>
+            <span style="color:#666;font-size:0.85rem">${tech.franchise || ''}</span><br><br>
+            <div>📍 ${tech.lat.toFixed(4)}°, ${tech.lng.toFixed(4)}°</div>
+            <div>🛣️ ${km} km</div>
+            <div>⚡ ${((tech.speed||0)*3.6).toFixed(0)} km/h</div>
+            <div style="margin-top:4px;color:${isActive?'#16a34a':'#dc2626'};font-weight:bold">
+              ${isActive ? '🟢 LIVE' : '🔴 Offline'}
+            </div>
+          </div>`,
+      });
+
+      marker.addListener('click', () => {
+        Object.values(infoWindows).forEach(i => i.close());
+        iw.open(map, marker);
+      });
+
+      markers[tech.id]    = marker;
+      infoWindows[tech.id] = iw;
+
+      bounds.extend(pos);
+      hasBounds = true;
+    });
+
+    if (hasBounds && !selectedTechId) map.fitBounds(bounds);
+  }
+
+  // ── FOCUS TECH ───────────────────────────────────────────────────────────
+  function focusTech(techId) {
+    selectedTechId = techId;
+    const tech = techData[techId];
+    if (!tech || !tech.lat) return;
+
+    map.panTo({lat: tech.lat, lng: tech.lng});
+    map.setZoom(16);
+
+    // Open info window
+    Object.values(infoWindows).forEach(iw => iw.close());
+    if (infoWindows[techId]) infoWindows[techId].open(map, markers[techId]);
+
+    // Update overlay
+    document.getElementById('overlay-info').innerHTML = `
+      <strong style="color:#f1f5f9">${tech.name}</strong><br>
+      <span>${tech.franchise}</span><br>
+      <span>🛣️ ${(tech.totalKm||0).toFixed(1)} km</span>
+    `;
+
+    renderSidebar(); // re-render to show selected state
+  }
+
+  // ── HEADER STATS ────────────────────────────────────────────────────────
+  function updateHeaderStats() {
+    const all     = Object.values(techData);
+    const active  = all.filter(t => t.status === 'active');
+    const totalKm = all.reduce((sum, t) => sum + (t.totalKm || 0), 0);
+    const now     = new Date();
+
+    document.getElementById('active-count').textContent = active.length;
+    document.getElementById('total-count').textContent  = all.length;
+    document.getElementById('total-km').textContent     = totalKm.toFixed(1);
+    document.getElementById('last-updated').textContent =
+      now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  // ── FILTER ───────────────────────────────────────────────────────────────
+  function setFilter(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderSidebar();
+  }
+
+  function filterCards() { renderSidebar(); }
+
+  // ── TIME AGO ─────────────────────────────────────────────────────────────
+  function timeAgo(date) {
+    if (!date) return '--';
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60)  return `${seconds}s`;
+    if (seconds < 3600) return `${Math.floor(seconds/60)}m`;
+    return `${Math.floor(seconds/3600)}h`;
+  }
+
+  // ── AUTO REFRESH TIME ────────────────────────────────────────────────────
+  setInterval(() => {
+    document.querySelectorAll('.tc-stat small').forEach(() => {});
+    updateHeaderStats();
+  }, 30000);
+</script>
 </body>
 </html>
