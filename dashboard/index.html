@@ -16,8 +16,21 @@
     .hstat{text-align:center}
     .hstat span{display:block;font-size:1.4rem;font-weight:700;color:#60a5fa}
     .hstat small{font-size:0.7rem;color:#93c5fd;text-transform:uppercase}
-    #layout{display:grid;grid-template-columns:400px 1fr;height:calc(100vh - 64px)}
+    #layout{display:grid;grid-template-columns:420px 1fr;height:calc(100vh - 64px)}
     #sidebar{background:#1e293b;display:flex;flex-direction:column;border-right:1px solid #334155;overflow:hidden;position:relative}
+
+    /* Tabs row */
+    #main-tabs{display:flex;border-bottom:1px solid #334155}
+    .main-tab{flex:1;padding:0.65rem;text-align:center;font-size:0.78rem;font-weight:600;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all 0.2s}
+    .main-tab:hover{color:#94a3b8}
+    .main-tab.active{color:#60a5fa;border-bottom-color:#3b82f6;background:rgba(59,130,246,0.05)}
+    .main-tab .tab-badge{display:inline-block;background:#ef4444;color:#fff;font-size:0.6rem;padding:0.1rem 0.35rem;border-radius:10px;margin-left:4px;vertical-align:middle}
+    .main-tab .leave-badge{background:#f97316}
+
+    /* Panels */
+    #panel-tracking{display:flex;flex-direction:column;flex:1;overflow:hidden}
+    #panel-leaves{display:none;flex-direction:column;flex:1;overflow:hidden}
+
     #search-wrap{padding:0.75rem 1rem;border-bottom:1px solid #334155}
     #search{width:100%;padding:0.5rem 0.75rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:0.85rem;outline:none}
     #search:focus{border-color:#3b82f6}
@@ -28,17 +41,20 @@
     .ftab.mfbs.active{background:#8b5cf6;border-color:#8b5cf6}
     .ftab.promptcare.active{background:#10b981;border-color:#10b981}
     .ftab.krisma.active{background:#f59e0b;border-color:#f59e0b}
-    #status-tabs{display:flex;gap:0.4rem;padding:0.5rem 1rem;border-bottom:1px solid #334155}
+    #status-tabs{display:flex;gap:0.4rem;padding:0.5rem 1rem;border-bottom:1px solid #334155;flex-wrap:wrap}
     .stab{padding:0.25rem 0.6rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
     .stab.active{background:#1e3a8a;border-color:#3b82f6;color:#60a5fa}
     #tech-list{flex:1;overflow-y:auto;padding:0.5rem}
     #tech-list::-webkit-scrollbar{width:4px}
     #tech-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+
+    /* Tech cards */
     .tech-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.4rem;cursor:pointer;transition:all 0.2s;border-left:4px solid #334155}
     .tech-card:hover{border-color:#3b82f6;transform:translateX(2px)}
     .tech-card.active-status{border-left-color:#22c55e}
     .tech-card.offline-status{border-left-color:#ef4444}
-    .tech-card.selected{background:#1e293b;border-color:#3b82f6;border-left-color:#3b82f6}
+    .tech-card.leave-status{border-left-color:#f97316}
+    .tech-card.selected{background:#1e293b;border-color:#3b82f6}
     .tc-row{display:flex;align-items:center;gap:0.75rem}
     .tc-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0}
     .tc-info{flex:1;min-width:0}
@@ -47,13 +63,30 @@
     .tc-badge{font-size:0.65rem;padding:0.15rem 0.45rem;border-radius:20px;font-weight:600;flex-shrink:0}
     .tc-badge.active{background:#166534;color:#86efac}
     .tc-badge.offline{background:#7f1d1d;color:#fca5a5}
+    .tc-badge.leave{background:#7c2d12;color:#fed7aa}
     .tc-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;margin-top:0.6rem}
     .tc-stat{background:#1e293b;border-radius:6px;padding:0.35rem;text-align:center}
     .tc-stat span{display:block;font-size:0.82rem;font-weight:700;color:#60a5fa}
     .tc-stat small{font-size:0.62rem;color:#64748b;text-transform:uppercase}
 
+    /* ── LEAVE PANEL ── */
+    #leave-filters{display:flex;gap:0.4rem;padding:0.75rem 1rem;border-bottom:1px solid #334155;flex-wrap:wrap}
+    .lfil{padding:0.25rem 0.65rem;border-radius:20px;font-size:0.72rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8;transition:all 0.2s}
+    .lfil.active{background:#7c2d12;border-color:#f97316;color:#fed7aa}
+    #leave-list{flex:1;overflow-y:auto;padding:0.75rem}
+    #leave-list::-webkit-scrollbar{width:4px}
+    #leave-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+    .leave-card{background:#0f172a;border:1px solid #334155;border-left:4px solid #f97316;border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.5rem}
+    .lc-row{display:flex;align-items:center;gap:0.75rem}
+    .lc-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;background:#f97316}
+    .lc-name{font-weight:600;font-size:0.88rem;color:#f1f5f9}
+    .lc-franchise{font-size:0.72rem;color:#64748b}
+    .lc-date{font-size:0.75rem;color:#fed7aa;font-weight:600}
+    .lc-type{font-size:0.65rem;padding:0.12rem 0.4rem;border-radius:10px;background:#451a03;color:#fb923c;font-weight:600;margin-top:4px;display:inline-block}
+    .leave-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;color:#475569;text-align:center}
+
     /* Detail panel */
-    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:65vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.5)}
+    #detail-panel{position:absolute;bottom:0;left:0;width:100%;background:#1e293b;border-top:2px solid #3b82f6;z-index:20;max-height:70vh;display:none;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,0.5)}
     #detail-panel.open{display:flex}
     #dp-header{padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     #dp-name{font-weight:700;font-size:0.95rem;color:#f1f5f9}
@@ -66,7 +99,7 @@
 
     /* Session timeline */
     .session-timeline{position:relative;padding-left:1.5rem;margin-bottom:1.25rem}
-    .session-timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#22c55e,#ef4444,#22c55e,#ef4444)}
+    .session-timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#22c55e,#ef4444)}
     .session-node{position:relative;margin-bottom:0.5rem}
     .session-node::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;border:2px solid #1e293b;z-index:1}
     .session-node.punch-in::before{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
@@ -88,16 +121,20 @@
     .session-count-badge{font-size:0.72rem;color:#64748b;margin-bottom:0.75rem;padding:0.3rem 0.75rem;background:#0f172a;border-radius:6px;display:inline-block;border:1px solid #334155}
 
     /* Movement timeline */
-    .section-title{font-size:0.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;font-weight:600}
+    .section-title{font-size:0.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;font-weight:600;margin-top:0.5rem}
     .timeline{position:relative;padding-left:1.5rem}
     .timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,#3b82f6,#1e3a8a)}
-    .tl-item{position:relative;margin-bottom:0.5rem;padding:0.55rem 0.75rem;background:#0f172a;border-radius:10px;border:1px solid #334155;transition:border-color 0.2s}
+    .tl-item{position:relative;margin-bottom:0.5rem;padding:0.6rem 0.85rem;background:#0f172a;border-radius:10px;border:1px solid #334155;transition:border-color 0.2s}
     .tl-item:hover{border-color:#3b82f6}
     .tl-item::before{content:'';position:absolute;left:-1.5rem;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b;box-shadow:0 0 6px rgba(59,130,246,0.5)}
     .tl-item:first-child::before{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.6)}
+    .tl-item:last-child::before{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,0.5)}
     .tl-time{font-size:0.72rem;color:#94a3b8;font-weight:600}
-    .tl-coords{font-size:0.78rem;color:#cbd5e1;margin-top:3px}
+    .tl-place{font-size:0.82rem;color:#f1f5f9;margin-top:3px;font-weight:500;line-height:1.3}
+    .tl-coords{font-size:0.7rem;color:#475569;margin-top:2px}
     .tl-km{font-size:0.72rem;color:#60a5fa;margin-top:3px;font-weight:600}
+    .tl-route{display:flex;align-items:center;gap:6px;margin:0.3rem 0;padding:0.4rem 0.6rem;background:#0f172a;border:1px dashed #334155;border-radius:8px;font-size:0.75rem;color:#94a3b8}
+    .tl-route .arrow{color:#3b82f6;font-size:1rem}
 
     .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1rem;color:#475569;text-align:center}
     .empty-state .icon{font-size:2.5rem;margin-bottom:0.75rem}
@@ -105,6 +142,12 @@
     #map{width:100%;height:100%}
     #map-overlay{position:absolute;top:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:12px;padding:0.75rem 1rem;border:1px solid #334155;z-index:5;min-width:180px;backdrop-filter:blur(10px)}
     #map-overlay h3{font-size:0.7rem;color:#94a3b8;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
+
+    /* Legend */
+    #legend{position:absolute;bottom:1rem;right:1rem;background:rgba(30,41,59,0.95);border-radius:10px;padding:0.6rem 0.9rem;border:1px solid #334155;z-index:5;backdrop-filter:blur(10px)}
+    .leg-item{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#94a3b8;margin-bottom:3px}
+    .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
     @media(max-width:768px){body{overflow:auto}#layout{grid-template-columns:1fr;grid-template-rows:auto 50vh}#header-stats{display:none}#detail-panel{width:100%}}
   </style>
 </head>
@@ -115,6 +158,7 @@
   <h1>🚛 Fleet Track Dashboard</h1>
   <div id="header-stats">
     <div class="hstat"><span id="active-count">0</span><small>Active</small></div>
+    <div class="hstat"><span id="leave-count">0</span><small>On Leave</small></div>
     <div class="hstat"><span id="total-count">0</span><small>Total</small></div>
     <div class="hstat"><span id="total-km">0</span><small>km Today</small></div>
     <div class="hstat"><span id="last-updated">--:--</span><small>Updated</small></div>
@@ -125,23 +169,48 @@
 
   <!-- SIDEBAR -->
   <div id="sidebar">
-    <div id="search-wrap">
-      <input id="search" type="text" placeholder="🔍 Search technician..." oninput="renderSidebar()"/>
-    </div>
-    <div id="franchise-tabs">
-      <button class="ftab active"     onclick="setFranchise('all',this)">All</button>
-      <button class="ftab mfbs"       onclick="setFranchise('MFBS',this)">MFBS</button>
-      <button class="ftab promptcare" onclick="setFranchise('PromptCare',this)">PromptCare</button>
-      <button class="ftab krisma"     onclick="setFranchise('Krisma Tech',this)">Krisma Tech</button>
-    </div>
-    <div id="status-tabs">
-      <button class="stab active" onclick="setStatus('all',this)">All</button>
-      <button class="stab"        onclick="setStatus('active',this)">🟢 Live</button>
-      <button class="stab"        onclick="setStatus('offline',this)">🔴 Offline</button>
-    </div>
-    <div id="tech-list"></div>
 
-    <!-- DETAIL PANEL -->
+    <!-- Main Tab switcher -->
+    <div id="main-tabs">
+      <div class="main-tab active" id="tab-tracking" onclick="switchMainTab('tracking')">
+        🚛 Tracking <span class="tab-badge" id="active-badge">0</span>
+      </div>
+      <div class="main-tab" id="tab-leaves" onclick="switchMainTab('leaves')">
+        🏖 Leaves <span class="tab-badge leave-badge" id="leave-badge">0</span>
+      </div>
+    </div>
+
+    <!-- ── TRACKING PANEL ── -->
+    <div id="panel-tracking">
+      <div id="search-wrap">
+        <input id="search" type="text" placeholder="🔍 Search technician..." oninput="renderSidebar()"/>
+      </div>
+      <div id="franchise-tabs">
+        <button class="ftab active"     onclick="setFranchise('all',this)">All</button>
+        <button class="ftab mfbs"       onclick="setFranchise('MFBS',this)">MFBS</button>
+        <button class="ftab promptcare" onclick="setFranchise('PromptCare',this)">PromptCare</button>
+        <button class="ftab krisma"     onclick="setFranchise('Krisma Tech',this)">Krisma Tech</button>
+      </div>
+      <div id="status-tabs">
+        <button class="stab active" onclick="setStatus('all',this)">All</button>
+        <button class="stab"        onclick="setStatus('active',this)">🟢 Live</button>
+        <button class="stab"        onclick="setStatus('offline',this)">🔴 Offline</button>
+        <button class="stab"        onclick="setStatus('leave',this)">🏖 Leave</button>
+      </div>
+      <div id="tech-list"></div>
+    </div>
+
+    <!-- ── LEAVE PANEL ── -->
+    <div id="panel-leaves">
+      <div id="leave-filters">
+        <button class="lfil active" onclick="setLeaveFilter('today',this)">Today</button>
+        <button class="lfil"        onclick="setLeaveFilter('week',this)">This Week</button>
+        <button class="lfil"        onclick="setLeaveFilter('all',this)">All Time</button>
+      </div>
+      <div id="leave-list"></div>
+    </div>
+
+    <!-- DETAIL PANEL (slides up over sidebar) -->
     <div id="detail-panel">
       <div id="dp-header">
         <div>
@@ -155,9 +224,11 @@
         <div id="dp-session-count" class="session-count-badge">Loading...</div>
         <div class="session-timeline" id="dp-sessions"></div>
         <div class="section-title">📍 Movement History</div>
+        <div id="dp-trail-summary"></div>
         <div class="timeline" id="dp-timeline"></div>
       </div>
     </div>
+
   </div>
 
   <!-- MAP -->
@@ -167,11 +238,16 @@
       <h3>Live Map</h3>
       <div id="overlay-info" style="font-size:0.78rem;color:#94a3b8">Click a card to focus</div>
     </div>
+    <div id="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#22c55e"></div> Live / Active</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div> Offline</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div> On Leave</div>
+    </div>
   </div>
 </div>
 
 <script>
-  // ── FIREBASE ─────────────────────────────────────────────────────────────
+  // ── FIREBASE ──────────────────────────────────────────────────────────────
   const firebaseConfig = {
     apiKey:            "AIzaSyDb2ro59qZ20XYMCydndpMXgeRJ6HmaEoQ",
     authDomain:        "fleet-track-486de.firebaseapp.com",
@@ -183,10 +259,15 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ── STATE ────────────────────────────────────────────────────────────────
-  let map, markers = {}, infoWindows = {};
-  let techData = {}, franchiseFilter = 'all', statusFilter = 'all';
-  let selectedTechId = null, trailUnsub = null;
+  // ── STATE ─────────────────────────────────────────────────────────────────
+  let map, geocoder, markers = {}, infoWindows = {};
+  let techData = {}, leaveData = [];
+  let franchiseFilter = 'all', statusFilter = 'all', leaveFilter = 'today';
+  let selectedTechId = null, trailUnsub = null, leavesUnsub = null;
+  let activeMainTab = 'tracking';
+
+  // Geocode cache — avoid repeat API calls for same coords
+  const geocodeCache = {};
 
   const fColors = {
     'MFBS':       '#8b5cf6',
@@ -196,16 +277,14 @@
   const aColors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16'];
   const aColor  = f => fColors[f] || aColors[(f||'?').charCodeAt(0) % aColors.length];
 
-  // ── HELPERS ──────────────────────────────────────────────────────────────
+  // ── HELPERS ───────────────────────────────────────────────────────────────
   function formatTime(date) {
-    if (!date) return '0';
-    return date.toLocaleTimeString('en-IN', {
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
+    if (!date) return '--';
+    return date.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
   }
   function formatDate(date) {
     if (!date) return '';
-    return date.toLocaleDateString('en-IN', {day: '2-digit', month: 'short'});
+    return date.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
   }
   function duration(start, end) {
     if (!start || !end) return '';
@@ -221,11 +300,42 @@
     if (s < 3600) return Math.floor(s / 60) + 'm';
     return Math.floor(s / 3600) + 'h';
   }
+  function todayStr() {
+    const n = new Date();
+    return `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()}`;
+  }
 
-  // ── MAP INIT ─────────────────────────────────────────────────────────────
+  // ── REVERSE GEOCODE (with cache) ──────────────────────────────────────────
+  function reverseGeocode(lat, lng) {
+    return new Promise(resolve => {
+      const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+      if (geocodeCache[key]) { resolve(geocodeCache[key]); return; }
+      if (!geocoder)         { resolve(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`); return; }
+
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          // Extract short readable name: locality + sublocality
+          const comps  = results[0].address_components;
+          const sub    = comps.find(c => c.types.includes('sublocality_level_1'))?.short_name;
+          const local  = comps.find(c => c.types.includes('locality'))?.short_name;
+          const area   = comps.find(c => c.types.includes('administrative_area_level_2'))?.short_name;
+          const place  = sub || local || area || results[0].formatted_address.split(',')[0];
+          const city   = local || area || '';
+          const label  = city && city !== place ? `${place}, ${city}` : place;
+          geocodeCache[key] = label;
+          resolve(label);
+        } else {
+          const fallback = `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+          resolve(fallback);
+        }
+      });
+    });
+  }
+
+  // ── MAP INIT ──────────────────────────────────────────────────────────────
   function initMap() {
-    map = new google.maps.Map(document.getElementById('map'), {
-      zoom: 12,
+    map      = new google.maps.Map(document.getElementById('map'), {
+      zoom:   12,
       center: {lat: 8.6, lng: 76.9},
       styles: [
         {elementType:'geometry',           stylers:[{color:'#1a2332'}]},
@@ -237,10 +347,12 @@
         {featureType:'poi',                stylers:[{visibility:'off'}]},
       ]
     });
+    geocoder = new google.maps.Geocoder();
     startTracking();
+    startLeavesListener();
   }
 
-  // ── LIVE LISTENER ────────────────────────────────────────────────────────
+  // ── LIVE LOCATION LISTENER ────────────────────────────────────────────────
   function startTracking() {
     db.collection('locations').onSnapshot(snap => {
       techData = {};
@@ -251,27 +363,103 @@
     });
   }
 
-  // ── SIDEBAR ──────────────────────────────────────────────────────────────
+  // ── LEAVES LISTENER ───────────────────────────────────────────────────────
+  function startLeavesListener() {
+    if (leavesUnsub) leavesUnsub();
+    leavesUnsub = db.collection('leaves')
+      .orderBy('date', 'desc')
+      .limit(200)
+      .onSnapshot(snap => {
+        leaveData = [];
+        snap.forEach(doc => leaveData.push({id: doc.id, ...doc.data()}));
+        updateHeader();
+        if (activeMainTab === 'leaves') renderLeavesPanel();
+        // Update leave badge
+        const todayLeaves = leaveData.filter(l => l.dateStr === todayStr()).length;
+        document.getElementById('leave-badge').textContent = todayLeaves;
+      });
+  }
+
+  // ── MAIN TAB SWITCH ───────────────────────────────────────────────────────
+  function switchMainTab(tab) {
+    activeMainTab = tab;
+    document.getElementById('tab-tracking').classList.toggle('active', tab === 'tracking');
+    document.getElementById('tab-leaves').classList.toggle('active', tab === 'leaves');
+    document.getElementById('panel-tracking').style.display = tab === 'tracking' ? 'flex' : 'none';
+    document.getElementById('panel-leaves').style.display   = tab === 'leaves'   ? 'flex' : 'none';
+    if (tab === 'leaves') renderLeavesPanel();
+  }
+
+  // ── LEAVES PANEL RENDER ───────────────────────────────────────────────────
+  function renderLeavesPanel() {
+    const list = document.getElementById('leave-list');
+    list.innerHTML = '';
+    const now   = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const week  = new Date(today); week.setDate(today.getDate() - 7);
+
+    const filtered = leaveData.filter(l => {
+      const d = l.date?.toDate ? l.date.toDate() : new Date();
+      if (leaveFilter === 'today') return l.dateStr === todayStr();
+      if (leaveFilter === 'week')  return d >= week;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="leave-empty">
+          <div style="font-size:2.5rem;margin-bottom:0.75rem">🏖</div>
+          <div style="color:#94a3b8;font-weight:600">No leaves found</div>
+          <small style="color:#475569;margin-top:4px">for the selected period</small>
+        </div>`;
+      return;
+    }
+
+    filtered.forEach(l => {
+      const bg      = aColor(l.franchise);
+      const initial = (l.name||'?').charAt(0).toUpperCase();
+      const d       = l.date?.toDate ? l.date.toDate() : null;
+      const card    = document.createElement('div');
+      card.className = 'leave-card';
+      card.innerHTML = `
+        <div class="lc-row">
+          <div class="lc-avatar" style="background:${bg}">${initial}</div>
+          <div style="flex:1;min-width:0">
+            <div class="lc-name">${l.name||'Unknown'}</div>
+            <div class="lc-franchise">${l.franchise||''}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="lc-date">📅 ${d ? formatDate(d) : l.dateStr || '--'}</div>
+            <span class="lc-type">${(l.type||'casual').toUpperCase()} LEAVE</span>
+          </div>
+        </div>`;
+      list.appendChild(card);
+    });
+  }
+
+  // ── SIDEBAR (tracking) RENDER ─────────────────────────────────────────────
   function renderSidebar() {
     const list   = document.getElementById('tech-list');
     const search = document.getElementById('search').value.toLowerCase();
     list.innerHTML = '';
 
     const sorted = Object.values(techData).sort((a, b) => {
-      if (a.status === 'active' && b.status !== 'active') return -1;
-      if (a.status !== 'active' && b.status === 'active') return  1;
-      return (a.name || '').localeCompare(b.name || '');
+      const rank = s => s === 'active' ? 0 : s === 'leave' ? 1 : 2;
+      if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+      return (a.name||'').localeCompare(b.name||'');
     });
 
     let count = 0;
     sorted.forEach(tech => {
       const isActive = tech.status === 'active';
+      const isLeave  = tech.status === 'leave';
       if (franchiseFilter !== 'all' && tech.franchise !== franchiseFilter) return;
       if (statusFilter === 'active'  && !isActive) return;
-      if (statusFilter === 'offline' &&  isActive) return;
+      if (statusFilter === 'offline' && (isActive || isLeave)) return;
+      if (statusFilter === 'leave'   && !isLeave)  return;
       if (search && !`${tech.name} ${tech.franchise}`.toLowerCase().includes(search)) return;
       count++;
-      list.appendChild(buildCard(tech, isActive));
+      list.appendChild(buildCard(tech, isActive, isLeave));
     });
 
     if (count === 0) {
@@ -279,13 +467,17 @@
         <div class="empty-state">
           <div class="icon">🚛</div>
           <div>No technicians found</div>
-          <small style="margin-top:4px;display:block">Waiting for Punch IN...</small>
+          <small style="margin-top:4px;display:block">Try a different filter</small>
         </div>`;
     }
+
+    // Update active badge
+    const activeCount = Object.values(techData).filter(t => t.status === 'active').length;
+    document.getElementById('active-badge').textContent = activeCount;
   }
 
-  // ── CARD ─────────────────────────────────────────────────────────────────
-  function buildCard(tech, isActive) {
+  // ── TECH CARD ─────────────────────────────────────────────────────────────
+  function buildCard(tech, isActive, isLeave) {
     const div      = document.createElement('div');
     const initials = (tech.name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
     const bg       = aColor(tech.franchise);
@@ -293,7 +485,11 @@
     const spd      = ((tech.speed  || 0) * 3.6).toFixed(0);
     const upd      = tech.updatedAt?.toDate ? timeAgo(tech.updatedAt.toDate()) : '--';
 
-    div.className = `tech-card ${isActive?'active-status':'offline-status'} ${tech.id===selectedTechId?'selected':''}`;
+    const badgeClass = isActive ? 'active' : isLeave ? 'leave' : 'offline';
+    const badgeText  = isActive ? '● LIVE' : isLeave ? '🏖 LEAVE' : '● OFF';
+    const cardClass  = isActive ? 'active-status' : isLeave ? 'leave-status' : 'offline-status';
+
+    div.className = `tech-card ${cardClass} ${tech.id===selectedTechId?'selected':''}`;
     div.innerHTML = `
       <div class="tc-row">
         <div class="tc-avatar" style="background:${bg}">${initials}</div>
@@ -301,26 +497,29 @@
           <div class="tc-name">${tech.name||'Unknown'}</div>
           <div class="tc-franchise">${tech.franchise||''}</div>
         </div>
-        <span class="tc-badge ${isActive?'active':'offline'}">${isActive?'● LIVE':'● OFF'}</span>
+        <span class="tc-badge ${badgeClass}">${badgeText}</span>
       </div>
+      ${isLeave ? `
+        <div style="margin-top:0.6rem;padding:0.4rem 0.6rem;background:#451a03;border-radius:8px;font-size:0.75rem;color:#fed7aa;text-align:center">
+          🏖 On Leave Today — Not Tracking
+        </div>` : `
       <div class="tc-stats-row">
         <div class="tc-stat"><span>${km}</span><small>km</small></div>
         <div class="tc-stat"><span>${spd}</span><small>km/h</small></div>
         <div class="tc-stat"><span>${upd}</span><small>updated</small></div>
-      </div>`;
-    div.onclick = () => openDetail(tech.id);
+      </div>`}`;
+
+    div.onclick = () => isLeave ? null : openDetail(tech.id);
     return div;
   }
 
-  // ── OPEN DETAIL ──────────────────────────────────────────────────────────
+  // ── OPEN DETAIL ───────────────────────────────────────────────────────────
   async function openDetail(techId) {
     selectedTechId = techId;
     renderSidebar();
-
     const tech = techData[techId];
     if (!tech) return;
 
-    // Map focus
     if (tech.lat && tech.lng) {
       map.panTo({lat: tech.lat, lng: tech.lng});
       map.setZoom(16);
@@ -328,84 +527,72 @@
       infoWindows[techId]?.open(map, markers[techId]);
     }
 
-    // Overlay
+    // Overlay update
     document.getElementById('overlay-info').innerHTML = `
       <strong style="color:#f1f5f9">${tech.name}</strong><br>
       <span style="color:#94a3b8">${tech.franchise}</span><br>
       <span style="color:#60a5fa">🛣️ ${(tech.totalKm||0).toFixed(1)} km</span>`;
 
-    // Panel
-    document.getElementById('dp-name').textContent         = tech.name || 'Unknown';
-    document.getElementById('dp-franchise').textContent    = tech.franchise || '';
+    document.getElementById('dp-name').textContent      = tech.name || 'Unknown';
+    document.getElementById('dp-franchise').textContent = tech.franchise || '';
     document.getElementById('dp-session-count').textContent = 'Loading...';
-    document.getElementById('dp-sessions').innerHTML       =
-      '<div style="color:#64748b;font-size:0.85rem">Loading sessions...</div>';
-    document.getElementById('dp-timeline').innerHTML       =
-      '<div style="color:#64748b;font-size:0.85rem">Loading history...</div>';
+    document.getElementById('dp-sessions').innerHTML    =
+      '<div style="color:#64748b;font-size:0.85rem">Loading...</div>';
+    document.getElementById('dp-timeline').innerHTML    =
+      '<div style="color:#64748b;font-size:0.85rem">Loading locations...</div>';
+    document.getElementById('dp-trail-summary').innerHTML = '';
     document.getElementById('detail-panel').classList.add('open');
 
     // ── SESSIONS ───────────────────────────────────────────────────────────
     try {
       const snap = await db.collection('sessions')
-        .where('techId', '==', techId)
-        .get();
-
+        .where('techId', '==', techId).get();
       const sessions = [];
       snap.forEach(doc => sessions.push(doc.data()));
-
-      // Sort oldest → newest (top to bottom like GitHub commits)
       sessions.sort((a, b) => {
         const ta = a.punchIn?.toDate?.() || new Date(0);
         const tb = b.punchIn?.toDate?.() || new Date(0);
         return ta - tb;
       });
-
       const container = document.getElementById('dp-sessions');
       const countEl   = document.getElementById('dp-session-count');
       container.innerHTML = '';
-
       if (sessions.length === 0) {
-        countEl.textContent    = '0 sessions';
-        container.innerHTML    =
-          '<div style="color:#64748b;font-size:0.85rem;padding:0.5rem 0">No sessions recorded yet.</div>';
+        countEl.textContent = '0 sessions';
+        container.innerHTML = '<div style="color:#64748b;font-size:0.85rem">No sessions yet.</div>';
       } else {
-        countEl.textContent = `${sessions.length} session${sessions.length > 1 ? 's' : ''}`;
-
+        countEl.textContent = `${sessions.length} session${sessions.length>1?'s':''}`;
         sessions.forEach((s, i) => {
-          const pIn    = s.punchIn?.toDate?.();
-          const pOut   = s.punchOut?.toDate?.();
+          const pIn  = s.punchIn?.toDate?.();
+          const pOut = s.punchOut?.toDate?.();
           const isLast = i === sessions.length - 1;
           const isNow  = !pOut && isLast;
 
-          // ── Punch IN node ───────────────────────────────────────────
           const inNode = document.createElement('div');
-          inNode.className = `session-node punch-in${isNow ? ' active-now' : ''}`;
+          inNode.className = `session-node punch-in${isNow?' active-now':''}`;
           inNode.innerHTML = `
-            <div class="session-box in-box${isNow ? ' active-box' : ''}">
+            <div class="session-box in-box${isNow?' active-box':''}">
               <div>
-                <div class="sb-type in${isNow ? ' now' : ''}">
-                  ${isNow ? '● LIVE NOW' : `▶ Punch IN — Session ${i + 1}`}
-                </div>
-                <div class="sb-time">${pIn ? formatTime(pIn) : '0'}</div>
+                <div class="sb-type in${isNow?' now':''}">${isNow?'● LIVE NOW':`▶ Punch IN — Session ${i+1}`}</div>
+                <div class="sb-time">${pIn?formatTime(pIn):'--'}</div>
               </div>
               <div style="text-align:right">
-                <div class="sb-km">🛣️ ${(s.totalKm || 0).toFixed(1)} km</div>
-                <div class="sb-dur">${pIn ? formatDate(pIn) : ''}</div>
+                <div class="sb-km">🛣️ ${(s.totalKm||0).toFixed(1)} km</div>
+                <div class="sb-dur">${pIn?formatDate(pIn):''}</div>
               </div>
             </div>`;
           container.appendChild(inNode);
 
-          // ── Punch OUT node ──────────────────────────────────────────
           const outNode = document.createElement('div');
           outNode.className = 'session-node punch-out';
           outNode.innerHTML = `
             <div class="session-box out-box">
               <div>
-                <div class="sb-type out">■ Punch OUT — Session ${i + 1}</div>
-                <div class="sb-time">${pOut ? formatTime(pOut) : isNow ? '—' : '0'}</div>
+                <div class="sb-type out">■ Punch OUT — Session ${i+1}</div>
+                <div class="sb-time">${pOut?formatTime(pOut):isNow?'—':'--'}</div>
               </div>
               <div style="text-align:right">
-                <div class="sb-dur">${pIn && pOut ? duration(pIn, pOut) : isNow ? 'Active' : ''}</div>
+                <div class="sb-dur">${pIn&&pOut?duration(pIn,pOut):isNow?'Active':''}</div>
               </div>
             </div>`;
           container.appendChild(outNode);
@@ -419,34 +606,60 @@
     loadTrail(techId);
   }
 
-  // ── TRAIL ────────────────────────────────────────────────────────────────
+  // ── TRAIL WITH LOCATION NAMES ─────────────────────────────────────────────
   function loadTrail(techId) {
     if (trailUnsub) { trailUnsub(); trailUnsub = null; }
     const timeline = document.getElementById('dp-timeline');
+    const summary  = document.getElementById('dp-trail-summary');
 
-    const render = docs => {
+    const render = async docs => {
       if (docs.length === 0) {
-        timeline.innerHTML =
-          '<div style="color:#64748b;font-size:0.85rem">No movement recorded yet.</div>';
+        timeline.innerHTML = '<div style="color:#64748b;font-size:0.85rem">No movement recorded yet.</div>';
+        summary.innerHTML  = '';
         return;
       }
+
+      timeline.innerHTML = '<div style="color:#64748b;font-size:0.8rem;padding:0.5rem 0">📡 Resolving location names...</div>';
+      summary.innerHTML  = '';
+
+      // Reverse geocode all trail points in parallel
+      const resolved = await Promise.all(
+        docs.map(async (d, i) => {
+          const place = (d.lat && d.lng)
+            ? await reverseGeocode(d.lat, d.lng)
+            : 'Unknown Location';
+          return { ...d, place, index: i };
+        })
+      );
+
+      // ── From / To summary ───────────────────────────────────────────────
+      if (resolved.length >= 2) {
+        const first = resolved[resolved.length - 1]; // oldest = last item (sorted desc)
+        const last  = resolved[0];                   // newest = first item
+        summary.innerHTML = `
+          <div class="tl-route">
+            <span>🟢 <strong style="color:#f1f5f9">${first.place}</strong></span>
+            <span class="arrow">→</span>
+            <span>📍 <strong style="color:#60a5fa">${last.place}</strong></span>
+          </div>`;
+      }
+
+      // ── Draw each trail point ────────────────────────────────────────────
       timeline.innerHTML = '';
-      docs.forEach(d => {
+      resolved.forEach(d => {
         const ts  = d.timestamp?.toDate ? formatTime(d.timestamp.toDate()) : '--';
-        const lat = d.lat?.toFixed(5) || '--';
-        const lng = d.lng?.toFixed(5) || '--';
         const km  = (d.totalKm || 0).toFixed(2);
         const el  = document.createElement('div');
         el.className = 'tl-item';
         el.innerHTML = `
           <div class="tl-time">🕐 ${ts}</div>
-          <div class="tl-coords">📍 ${lat}°, ${lng}°</div>
+          <div class="tl-place">📍 ${d.place}</div>
+          <div class="tl-coords">${d.lat?.toFixed(5) || '--'}°, ${d.lng?.toFixed(5) || '--'}°</div>
           <div class="tl-km">🛣️ ${km} km cumulative</div>`;
         timeline.appendChild(el);
       });
     };
 
-    // Try ordered query first; fallback to client-side sort if index missing
     trailUnsub = db
       .collection('locations').doc(techId)
       .collection('trail')
@@ -459,7 +672,6 @@
           render(docs);
         },
         () => {
-          // Fallback: no index — sort client-side
           db.collection('locations').doc(techId)
             .collection('trail').limit(30).get()
             .then(snap => {
@@ -476,7 +688,7 @@
       );
   }
 
-  // ── CLOSE DETAIL ─────────────────────────────────────────────────────────
+  // ── CLOSE DETAIL ──────────────────────────────────────────────────────────
   function closeDetail() {
     document.getElementById('detail-panel').classList.remove('open');
     if (trailUnsub) { trailUnsub(); trailUnsub = null; }
@@ -485,7 +697,7 @@
     renderSidebar();
   }
 
-  // ── MARKERS ──────────────────────────────────────────────────────────────
+  // ── MAP MARKERS ───────────────────────────────────────────────────────────
   function renderMarkers() {
     Object.values(markers).forEach(m => m.setMap(null));
     Object.values(infoWindows).forEach(iw => iw.close());
@@ -497,49 +709,53 @@
     Object.values(techData).forEach(tech => {
       if (!tech.lat || !tech.lng) return;
       const isActive = tech.status === 'active';
-      const bg       = aColor(tech.franchise);
-      const initial  = (tech.name || '?').charAt(0).toUpperCase();
-      const km       = (tech.totalKm || 0).toFixed(1);
+      const isLeave  = tech.status === 'leave';
+      const bg       = isLeave ? '#f97316' : aColor(tech.franchise);
+      const initial  = (tech.name||'?').charAt(0).toUpperCase();
+      const km       = (tech.totalKm||0).toFixed(1);
+      const color    = isActive ? bg : isLeave ? '#f97316' : '#6b7280';
 
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="42" height="50" viewBox="0 0 42 50">
-          <circle cx="21" cy="19" r="18" fill="${isActive ? bg : '#6b7280'}"
-                  stroke="#ffffff" stroke-width="2.5"/>
-          <polygon points="13,35 29,35 21,48" fill="${isActive ? bg : '#6b7280'}"/>
+          <circle cx="21" cy="19" r="18" fill="${color}" stroke="#ffffff" stroke-width="2.5"/>
+          <polygon points="13,35 29,35 21,48" fill="${color}"/>
           <text x="21" y="25" text-anchor="middle" fill="white"
                 font-size="14" font-family="Arial" font-weight="bold">${initial}</text>
         </svg>`;
 
       const marker = new google.maps.Marker({
-        position: {lat: tech.lat, lng: tech.lng},
+        position:  {lat: tech.lat, lng: tech.lng},
         map,
-        title: tech.name,
+        title:     tech.name,
         icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+          url:        'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
           scaledSize: new google.maps.Size(42, 50),
           anchor:     new google.maps.Point(21, 48),
         },
-        zIndex: isActive ? 10 : 1,
+        zIndex: isActive ? 10 : isLeave ? 5 : 1,
       });
 
       const iw = new google.maps.InfoWindow({
         content: `
-          <div style="font-family:sans-serif;padding:4px;min-width:160px">
-            <strong>${tech.name || 'Unknown'}</strong><br>
-            <span style="color:#666;font-size:0.85rem">${tech.franchise || ''}</span><br><br>
-            <div>📍 ${tech.lat.toFixed(4)}°, ${tech.lng.toFixed(4)}°</div>
-            <div>🛣️ ${km} km</div>
-            <div>⚡ ${((tech.speed || 0) * 3.6).toFixed(0)} km/h</div>
-            <div style="color:${isActive ? '#16a34a' : '#dc2626'};font-weight:bold;margin-top:4px">
-              ${isActive ? '🟢 LIVE' : '🔴 Offline'}
-            </div>
+          <div style="font-family:sans-serif;padding:4px;min-width:170px">
+            <strong>${tech.name||'Unknown'}</strong><br>
+            <span style="color:#666;font-size:0.85rem">${tech.franchise||''}</span><br><br>
+            ${isLeave
+              ? `<div style="color:#f97316;font-weight:bold">🏖 On Leave Today</div>`
+              : `<div>📍 ${tech.lat.toFixed(4)}°, ${tech.lng.toFixed(4)}°</div>
+                 <div>🛣️ ${km} km</div>
+                 <div>⚡ ${((tech.speed||0)*3.6).toFixed(0)} km/h</div>
+                 <div style="color:${isActive?'#16a34a':'#dc2626'};font-weight:bold;margin-top:4px">
+                   ${isActive?'🟢 LIVE':'🔴 Offline'}
+                 </div>`
+            }
           </div>`,
       });
 
       marker.addListener('click', () => {
         Object.values(infoWindows).forEach(i => i.close());
         iw.open(map, marker);
-        openDetail(tech.id);
+        if (!isLeave) openDetail(tech.id);
       });
 
       markers[tech.id]     = marker;
@@ -551,19 +767,21 @@
     if (hasBounds && !selectedTechId) map.fitBounds(bounds);
   }
 
-  // ── HEADER ───────────────────────────────────────────────────────────────
+  // ── HEADER ────────────────────────────────────────────────────────────────
   function updateHeader() {
-    const all    = Object.values(techData);
-    const active = all.filter(t => t.status === 'active');
-    const km     = all.reduce((s, t) => s + (t.totalKm || 0), 0);
-    document.getElementById('active-count').textContent = active.length;
-    document.getElementById('total-count').textContent  = all.length;
-    document.getElementById('total-km').textContent     = km.toFixed(1);
-    document.getElementById('last-updated').textContent =
+    const all     = Object.values(techData);
+    const active  = all.filter(t => t.status === 'active');
+    const onLeave = all.filter(t => t.status === 'leave');
+    const km      = all.reduce((s, t) => s + (t.totalKm||0), 0);
+    document.getElementById('active-count').textContent  = active.length;
+    document.getElementById('leave-count').textContent   = onLeave.length;
+    document.getElementById('total-count').textContent   = all.length;
+    document.getElementById('total-km').textContent      = km.toFixed(1);
+    document.getElementById('last-updated').textContent  =
       new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
   }
 
-  // ── FILTERS ──────────────────────────────────────────────────────────────
+  // ── FILTERS ───────────────────────────────────────────────────────────────
   function setFranchise(val, el) {
     franchiseFilter = val;
     document.querySelectorAll('#franchise-tabs .ftab').forEach(b => b.classList.remove('active'));
@@ -575,6 +793,12 @@
     document.querySelectorAll('#status-tabs .stab').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     renderSidebar();
+  }
+  function setLeaveFilter(val, el) {
+    leaveFilter = val;
+    document.querySelectorAll('#leave-filters .lfil').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderLeavesPanel();
   }
 
   setInterval(updateHeader, 30000);
