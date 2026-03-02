@@ -9,7 +9,10 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // ✅ Init first — this requests notification + exact alarm permissions
   await NotificationService.init();
   await initBackgroundService();
   runApp(const FleetTrackApp());

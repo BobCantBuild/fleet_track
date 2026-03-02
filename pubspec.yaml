@@ -22,12 +22,14 @@ dependencies:
 
   # Background service (foreground service for continuous GPS)
   flutter_background_service: ^5.0.5
+  flutter_background_service_android: ^6.1.2
 
   # Local notifications (punch-in reminder + location-off alert)
   flutter_local_notifications: ^20.1.0
 
   # Persistent login state
   shared_preferences: ^2.3.2
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

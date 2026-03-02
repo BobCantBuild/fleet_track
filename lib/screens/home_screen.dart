@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/location_service.dart';
 import '../utils/constants.dart';
+import '../services/notification_service.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,24 +17,38 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isPunchedIn = false;
+  bool _isOnLeave = false;
   double _totalKm = 0.0;
   String _techName = '';
   String _franchise = '';
   String _techId = '';
-  String? _sessionId;
-  StreamSubscription? _bgSub;
+  String _sessionId = '';
   DateTime? _punchInTime;
+  StreamSubscription? _bgSub;
+  Timer? _uiTimer;
 
   @override
   void initState() {
     super.initState();
     _loadState();
 
-    // Listen to km updates from background service
-    _bgSub = FlutterBackgroundService().on('locationUpdate').listen((event) {
+    // ✅ Listen to background service km updates
+    _bgSub = FlutterBackgroundService().on('update').listen((event) {
       if (event != null && mounted) {
-        setState(() => _totalKm = (event['totalKm'] as num).toDouble());
+        final km = (event['totalKm'] as num).toDouble();
+        setState(() => _totalKm = km);
+        // Keep SharedPreferences in sync
+        SharedPreferences.getInstance()
+            .then((p) => p.setDouble('total_km', km));
       }
+    });
+
+    // ✅ Refresh UI every 5 seconds from SharedPreferences
+    _uiTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (!mounted) return;
+      final p = await SharedPreferences.getInstance();
+      final km = p.getDouble('total_km') ?? 0.0;
+      if (mounted) setState(() => _totalKm = km);
     });
   }
 
@@ -44,29 +59,114 @@ class _HomeScreenState extends State<HomeScreen> {
       _franchise = prefs.getString('franchise') ?? '';
       _techId = prefs.getString('tech_id') ?? '';
       _isPunchedIn = prefs.getBool('is_punched_in') ?? false;
+      _isOnLeave = prefs.getBool('is_on_leave') ?? false;
       _totalKm = prefs.getDouble('total_km') ?? 0.0;
-      final punchStr = prefs.getString('punch_in_time');
-      if (punchStr != null) _punchInTime = DateTime.parse(punchStr);
+      _sessionId = prefs.getString('session_id') ?? '';
+      final pt = prefs.getString('punch_in_time');
+      if (pt != null) _punchInTime = DateTime.parse(pt);
     });
   }
 
-  Future<void> _punchIn() async {
-    final granted = await LocationService.requestPermissions();
-    if (!granted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permission required')),
+  // ── LOCATION PERMISSION ───────────────────────────────────────────────────
+  Future<bool> _requestLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text('📍 Location Required',
+              style: TextStyle(color: Colors.white)),
+          content: const Text('Please turn ON GPS to Punch IN.',
+              style: TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await Geolocator.openLocationSettings();
+              },
+              child: const Text('Open Settings',
+                  style: TextStyle(color: Color(0xFF3B82F6))),
+            ),
+          ],
+        ),
       );
-      return;
+      return false;
     }
 
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied) {
+        _showSnack('Location permission denied.');
+        return false;
+      }
+    }
+    if (perm == LocationPermission.deniedForever) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text('Permission Required',
+              style: TextStyle(color: Colors.white)),
+          content: const Text(
+              'Enable location from App Settings to use this app.',
+              style: TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await openAppSettings();
+              },
+              child: const Text('Open Settings',
+                  style: TextStyle(color: Color(0xFF3B82F6))),
+            ),
+          ],
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  // ── PUNCH IN ──────────────────────────────────────────────────────────────
+  Future<void> _punchIn() async {
+    final granted = await _requestLocationPermission();
+    if (!granted) return;
+
     final sessionId = 'session_${DateTime.now().millisecondsSinceEpoch}';
+    final punchInTime = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
+
+    // ✅ Hard reset km to 0 for every new session
     await prefs.setBool('is_punched_in', true);
+    await prefs.setBool('is_on_leave', false);
     await prefs.setString('session_id', sessionId);
     await prefs.setDouble('total_km', 0.0);
-    await prefs.setString('punch_in_time', DateTime.now().toIso8601String());
+    await prefs.setString('punch_in_time', punchInTime.toIso8601String());
 
-    // Create session document
+    setState(() {
+      _isPunchedIn = true;
+      _isOnLeave = false;
+      _totalKm = 0.0; // ✅ reset UI immediately
+      _sessionId = sessionId;
+      _punchInTime = punchInTime;
+    });
+
+    // ✅ Cancel today's 10 AM reminder — auto reschedules tomorrow
+    await NotificationService.cancelTodayReminderOnly();
+
+    // Initial GPS write
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      await _writeLocation(pos, 0.0, sessionId, 'active');
+    } catch (_) {}
+
+    // Firestore session doc
     await FirebaseFirestore.instance
         .collection(AppConstants.sessionsCollection)
         .doc(sessionId)
@@ -80,57 +180,210 @@ class _HomeScreenState extends State<HomeScreen> {
       'status': 'active',
     });
 
-    // Start background GPS service
-    await FlutterBackgroundService().startService();
+    // Clear any leave status
+    await FirebaseFirestore.instance
+        .collection(AppConstants.locationsCollection)
+        .doc(_techId)
+        .set({
+      'status': 'active',
+      'leaveStatus': null,
+    }, SetOptions(merge: true));
 
-    setState(() {
-      _isPunchedIn = true;
-      _totalKm = 0.0;
-      _sessionId = sessionId;
-      _punchInTime = DateTime.now();
-    });
+    await FlutterBackgroundService().startService();
+    _showSnack('✅ Punched IN — GPS tracking started!');
   }
 
+  // ── PUNCH OUT ─────────────────────────────────────────────────────────────
   Future<void> _punchOut() async {
     final prefs = await SharedPreferences.getInstance();
-    final sessionId = prefs.getString('session_id') ?? '';
+    // ✅ Read latest km from prefs before stopping
+    final finalKm = prefs.getDouble('total_km') ?? _totalKm;
 
-    // Stop background service (it self-checks is_punched_in)
     await prefs.setBool('is_punched_in', false);
+    await prefs.setDouble('total_km', finalKm);
+
     FlutterBackgroundService().invoke('stopService');
 
-    // Close session doc
-    if (sessionId.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection(AppConstants.sessionsCollection)
-          .doc(sessionId)
-          .update({
-        'punchOut': FieldValue.serverTimestamp(),
-        'totalKm': _totalKm,
-        'status': 'completed',
-      });
-    }
-
-    // Update technician live doc status
     await FirebaseFirestore.instance
         .collection(AppConstants.locationsCollection)
         .doc(_techId)
         .set({'status': 'offline'}, SetOptions(merge: true));
 
-    await prefs.setDouble('total_km', _totalKm);
+    if (_sessionId.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection(AppConstants.sessionsCollection)
+          .doc(_sessionId)
+          .update({
+        'punchOut': FieldValue.serverTimestamp(),
+        'totalKm': finalKm,
+        'status': 'completed',
+      });
+    }
+
     setState(() {
       _isPunchedIn = false;
+      _totalKm = finalKm;
+    });
+    _showSnack('👋 Punched OUT. Total: ${finalKm.toStringAsFixed(2)} km');
+  }
+
+  // ── APPLY LEAVE ───────────────────────────────────────────────────────────
+  Future<void> _applyLeave() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title:
+            const Text('🏖 Apply Leave', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Mark today as Leave?\nThis will be visible to your manager.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes, Apply Leave'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final leaveId = 'leave_${DateTime.now().millisecondsSinceEpoch}';
+    final today = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool('is_on_leave', true);
+    await prefs.setBool('is_punched_in', false);
+
+    setState(() {
+      _isOnLeave = true;
+      _isPunchedIn = false;
+    });
+
+    // ✅ Cancel today's 10 AM reminder
+    await NotificationService.cancelTodayReminderOnly();
+
+    await FirebaseFirestore.instance
+        .collection(AppConstants.leavesCollection)
+        .doc(leaveId)
+        .set({
+      'techId': _techId,
+      'name': _techName,
+      'franchise': _franchise,
+      'date': FieldValue.serverTimestamp(),
+      'dateStr': '${today.day}/${today.month}/${today.year}',
+      'status': 'approved',
+      'type': 'casual',
+    });
+
+    await FirebaseFirestore.instance
+        .collection(AppConstants.locationsCollection)
+        .doc(_techId)
+        .set({
+      'status': 'leave',
+      'leaveStatus': 'on_leave',
+      'name': _techName,
+      'franchise': _franchise,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    _showSnack('🏖 Leave applied successfully!');
+  }
+
+  // ── WRITE LOCATION ────────────────────────────────────────────────────────
+  Future<void> _writeLocation(
+      Position pos, double km, String sessionId, String status) async {
+    final now = DateTime.now();
+    final locRef = FirebaseFirestore.instance
+        .collection(AppConstants.locationsCollection)
+        .doc(_techId);
+
+    await locRef.set({
+      'lat': pos.latitude,
+      'lng': pos.longitude,
+      'accuracy': pos.accuracy,
+      'speed': pos.speed,
+      'totalKm': km,
+      'sessionId': sessionId,
+      'franchise': _franchise,
+      'name': _techName,
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await locRef.collection('trail').add({
+      'lat': pos.latitude,
+      'lng': pos.longitude,
+      'totalKm': km,
+      'sessionId': sessionId,
+      'timestamp': FieldValue.serverTimestamp(),
+      'dateStr': '${now.day}/${now.month}/${now.year}',
     });
   }
 
+  // ── CANCEL LEAVE & PUNCH IN ───────────────────────────────────────────────
+  Future<void> _cancelLeaveAndPunchIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_on_leave', false);
+    setState(() => _isOnLeave = false);
+    await FirebaseFirestore.instance
+        .collection(AppConstants.locationsCollection)
+        .doc(_techId)
+        .set({
+      'status': 'offline',
+      'leaveStatus': null,
+    }, SetOptions(merge: true));
+    await _punchIn();
+  }
+
+  // ── LOGOUT ────────────────────────────────────────────────────────────────
   Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Logout', style: TextStyle(color: Colors.white)),
+        content: const Text('Are you sure you want to logout?',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
     if (_isPunchedIn) await _punchOut();
+
+    await NotificationService.cancelPunchReminder();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+        MaterialPageRoute(builder: (_) => const LoginScreen()));
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: const Color(0xFF1E293B),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   String _formatDuration() {
@@ -144,20 +397,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _bgSub?.cancel();
+    _uiTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Fleet Track'),
+        title: const Text('Fleet Track',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF1E3A8A),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: _logout,
-          )
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
       body: Padding(
@@ -165,31 +420,58 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Identity card ───────────────────────────────────────
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_techName,
-                        style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 4),
-                    Text(_franchise,
-                        style: Theme.of(context).textTheme.bodyMedium),
-                  ],
+            // ── Identity card ─────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E3A8A), Color(0xFF1D4ED8)],
                 ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 12)
+                ],
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.white24,
+                    child: Text(
+                      _techName.isNotEmpty ? _techName[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_techName,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold)),
+                      Text(_franchise,
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 13)),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
-            // ── Stats row ───────────────────────────────────────────
+            // ── Stats row ─────────────────────────────────────────────
             Row(
               children: [
                 Expanded(
                   child: _StatCard(
                     icon: Icons.directions_walk,
                     label: 'Distance',
+                    // ✅ Shows live synced km
                     value: '${_totalKm.toStringAsFixed(2)} km',
                     color: Colors.green,
                   ),
@@ -205,54 +487,147 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
-            // ── Status indicator ────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            // ── Status banner ─────────────────────────────────────────
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color:
-                    _isPunchedIn ? Colors.green.shade50 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
+                color: _isOnLeave
+                    ? const Color(0xFF451A03)
+                    : _isPunchedIn
+                        ? const Color(0xFF052E16)
+                        : const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _isPunchedIn ? Colors.green : Colors.grey,
+                  color: _isOnLeave
+                      ? Colors.orange
+                      : _isPunchedIn
+                          ? Colors.green
+                          : Colors.grey.shade700,
+                  width: 2,
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
-                    _isPunchedIn ? Icons.location_on : Icons.location_off,
-                    color: _isPunchedIn ? Colors.green : Colors.grey,
+                    _isOnLeave
+                        ? Icons.beach_access
+                        : _isPunchedIn
+                            ? Icons.location_on
+                            : Icons.location_off,
+                    color: _isOnLeave
+                        ? Colors.orange
+                        : _isPunchedIn
+                            ? Colors.green
+                            : Colors.grey,
+                    size: 28,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isPunchedIn
-                        ? 'Tracking Active — Location sharing ON'
-                        : 'Not Tracking — Punch IN to start',
-                    style: TextStyle(
-                      color: _isPunchedIn ? Colors.green : Colors.grey,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _isOnLeave
+                          ? '🏖 On Leave Today\nVisible to your manager'
+                          : _isPunchedIn
+                              ? '🟢 Tracking Active\nLocation is being shared'
+                              : '⚫ Not Tracking\nPunch IN to start work',
+                      style: TextStyle(
+                        color: _isOnLeave
+                            ? Colors.orange[200]
+                            : _isPunchedIn
+                                ? Colors.green[200]
+                                : Colors.grey[400],
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
             const Spacer(),
 
-            // ── Punch IN / OUT button ───────────────────────────────
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: _isPunchedIn ? Colors.red : Colors.blue,
-                minimumSize: const Size.fromHeight(56),
+            // ── Punch IN ──────────────────────────────────────────────
+            if (!_isPunchedIn && !_isOnLeave) ...[
+              SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D4ED8),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    elevation: 4,
+                  ),
+                  icon: const Icon(Icons.play_circle_outlined, size: 26),
+                  label: const Text('Punch IN',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  onPressed: _punchIn,
+                ),
               ),
-              icon: Icon(_isPunchedIn ? Icons.stop_circle : Icons.play_circle),
-              label: Text(
-                _isPunchedIn ? 'Punch OUT' : 'Punch IN',
-                style: const TextStyle(fontSize: 18),
+              const SizedBox(height: 10),
+
+              // ── Apply Leave ────────────────────────────────────────
+              SizedBox(
+                height: 50,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.beach_access, size: 22),
+                  label: const Text('Apply Leave',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  onPressed: _applyLeave,
+                ),
               ),
-              onPressed: _isPunchedIn ? _punchOut : _punchIn,
-            ),
-            const SizedBox(height: 16),
+            ],
+
+            // ── Punch OUT ─────────────────────────────────────────────
+            if (_isPunchedIn)
+              SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[700],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    elevation: 4,
+                  ),
+                  icon: const Icon(Icons.stop_circle_outlined, size: 26),
+                  label: const Text('Punch OUT',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  onPressed: _punchOut,
+                ),
+              ),
+
+            // ── Cancel Leave ──────────────────────────────────────────
+            if (_isOnLeave)
+              SizedBox(
+                height: 50,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey,
+                    side: const BorderSide(color: Colors.grey),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.undo, size: 22),
+                  label: const Text('Cancel Leave & Punch IN',
+                      style: TextStyle(fontSize: 15)),
+                  onPressed: _cancelLeaveAndPunchIn,
+                ),
+              ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -260,34 +635,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ── Stat Card ──────────────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
   final Color color;
-  const _StatCard(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      required this.color});
-
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(value,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.bold, color: color)),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ],
       ),
     );
   }

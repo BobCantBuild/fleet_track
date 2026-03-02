@@ -1,34 +1,38 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service/flutter_background_service.dart'
-    show AndroidConfiguration, IosConfiguration;
-import 'package:geolocator/geolocator.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'notification_service.dart';
 import '../utils/constants.dart';
 
-// ─── Called once at app start ───────────────────────────────────────────────
 Future<void> initBackgroundService() async {
   final service = FlutterBackgroundService();
-
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onServiceStart,
-      autoStart: false, // only starts after Punch IN
       isForegroundMode: true,
+      autoStart: false,
       notificationChannelId: AppConstants.locationChannelId,
-      initialNotificationTitle: 'Fleet Track',
-      initialNotificationContent: 'Location tracking active',
+      initialNotificationTitle: '🚛 Fleet Track Active',
+      initialNotificationContent: 'GPS tracking running...',
       foregroundServiceNotificationId: 888,
-      foregroundServiceTypes: [AndroidForegroundType.location],
     ),
-    iosConfiguration: IosConfiguration(autoStart: false),
+    iosConfiguration: IosConfiguration(
+      autoStart: false,
+      onForeground: onServiceStart,
+      onBackground: onIosBackground,
+    ),
   );
 }
 
-// ─── Entry point for background isolate ─────────────────────────────────────
+@pragma('vm:entry-point')
+Future<bool> onIosBackground(ServiceInstance service) async => true;
+
 @pragma('vm:entry-point')
 void onServiceStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
@@ -39,131 +43,143 @@ void onServiceStart(ServiceInstance service) async {
   final name = prefs.getString('name') ?? '';
   final sessionId = prefs.getString('session_id') ?? '';
 
-  double totalKm = 0.0;
-  Position? lastPosition;
-  bool locationWasOn = true;
-
-  // Update foreground notification text
-  if (service is AndroidServiceInstance) {
-    service.setForegroundNotificationInfo(
-      title: 'Fleet Track — $name',
-      content: 'Tracking active',
-    );
+  if (techId.isEmpty) {
+    service.stopSelf();
+    return;
   }
 
-  // ── Periodic GPS push to Firestore ──────────────────────────────────────
+  // ✅ Silent channel — no popup, no sound
+  final FlutterLocalNotificationsPlugin localPlugin =
+      FlutterLocalNotificationsPlugin();
+  await localPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          AppConstants.locationChannelId,
+          'Fleet Track GPS',
+          description: 'Live GPS tracking — silent ongoing',
+          importance: Importance.low,
+          playSound: false,
+          enableVibration: false,
+          showBadge: false,
+        ),
+      );
+
+  service.on('stopService').listen((_) => service.stopSelf());
+
+  // ✅ Start km from 0 — single source of truth
+  double totalKm = 0.0;
+  Position? lastPosition;
+  bool wasLocationOn = true;
+  bool firstReading = true; // skip distance on very first point
+
   Timer.periodic(
     Duration(seconds: AppConstants.gpsIntervalSeconds),
     (timer) async {
-      // Check if service should stop (punched out)
       final p = await SharedPreferences.getInstance();
-      if (!(p.getBool('is_punched_in') ?? false)) {
+      final punchedIn = p.getBool('is_punched_in') ?? false;
+
+      if (!punchedIn) {
         timer.cancel();
         service.stopSelf();
         return;
       }
 
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (locationWasOn) {
-          // Location just turned off — fire warning notification
+      // GPS ON/OFF
+      final locEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!locEnabled) {
+        if (wasLocationOn) {
           await NotificationService.showLocationOffWarning();
-          locationWasOn = false;
+          wasLocationOn = false;
         }
         return;
       }
-
-      if (!locationWasOn) {
+      if (!wasLocationOn) {
         await NotificationService.cancelLocationWarning();
-        locationWasOn = true;
+        wasLocationOn = true;
       }
 
+      // Get position
       Position pos;
       try {
         pos = await Geolocator.getCurrentPosition(
-          locationSettings:
-              const LocationSettings(accuracy: LocationAccuracy.high),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            // ✅ Increased from 5m to 20m — reduces GPS drift noise
+            distanceFilter: 20,
+          ),
         );
       } catch (_) {
         return;
       }
 
-      // Accumulate km
-      if (lastPosition != null) {
-        totalKm += LocationService_distanceKm(
+      // ✅ Only add distance if:
+      // - Not the first reading (no jump from 0,0)
+      // - Accuracy is good (< 30 metres)
+      // - Moved more than 20m (real movement, not GPS wobble)
+      if (!firstReading && lastPosition != null) {
+        final metres = Geolocator.distanceBetween(
           lastPosition!.latitude,
           lastPosition!.longitude,
           pos.latitude,
           pos.longitude,
         );
+
+        // ✅ Only count if accuracy is acceptable AND distance is real
+        if (pos.accuracy < 30 && metres >= 20) {
+          totalKm += metres / 1000;
+        }
       }
+      firstReading = false;
       lastPosition = pos;
 
-      // Push to Firestore — locations/{techId}/trail/{auto-id}
-      await FirebaseFirestore.instance
+      final km = double.parse(totalKm.toStringAsFixed(3));
+
+      // ✅ Save to SharedPreferences — HomeScreen reads from here
+      await p.setDouble('total_km', km);
+
+      // Update silent foreground notification
+      if (service is AndroidServiceInstance) {
+        service.setForegroundNotificationInfo(
+          title: '🚛 $name — Tracking Active',
+          content: '📍 Live  |  🛣️ ${km.toStringAsFixed(2)} km covered',
+        );
+      }
+
+      final now = DateTime.now();
+      final locRef = FirebaseFirestore.instance
           .collection(AppConstants.locationsCollection)
-          .doc(techId)
-          .collection('trail')
-          .add({
+          .doc(techId);
+
+      await locRef.set({
         'lat': pos.latitude,
         'lng': pos.longitude,
         'accuracy': pos.accuracy,
         'speed': pos.speed,
-        'totalKm': double.parse(totalKm.toStringAsFixed(3)),
+        'totalKm': km,
         'sessionId': sessionId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'franchise': franchise,
-        'name': name,
-      });
-
-      // Also update the live "last known" doc for the dashboard map pin
-      await FirebaseFirestore.instance
-          .collection(AppConstants.locationsCollection)
-          .doc(techId)
-          .set({
-        'lat': pos.latitude,
-        'lng': pos.longitude,
-        'totalKm': double.parse(totalKm.toStringAsFixed(3)),
-        'sessionId': sessionId,
-        'updatedAt': FieldValue.serverTimestamp(),
         'franchise': franchise,
         'name': name,
         'status': 'active',
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Notify UI isolate
-      service.invoke('locationUpdate', {
+      await locRef.collection('trail').add({
         'lat': pos.latitude,
         'lng': pos.longitude,
-        'totalKm': totalKm,
+        'totalKm': km,
+        'sessionId': sessionId,
+        'timestamp': FieldValue.serverTimestamp(),
+        'dateStr': '${now.day}/${now.month}/${now.year}',
+      });
+
+      // ✅ Send km update to HomeScreen
+      service.invoke('update', {
+        'lat': pos.latitude,
+        'lng': pos.longitude,
+        'totalKm': km,
       });
     },
   );
-
-  // ── 9:30 AM punch-in reminder check (runs every minute) ─────────────────
-  Timer.periodic(const Duration(minutes: 1), (timer) async {
-    final now = DateTime.now();
-    final p = await SharedPreferences.getInstance();
-    final alreadyNotified = p.getBool('punch_notif_sent_today') ?? false;
-    final isPunchedIn = p.getBool('is_punched_in') ?? false;
-
-    if (now.hour == AppConstants.punchInHour &&
-        now.minute == AppConstants.punchInMinute &&
-        !alreadyNotified &&
-        !isPunchedIn) {
-      await NotificationService.showPunchInReminder();
-      await p.setBool('punch_notif_sent_today', true);
-    }
-    // Reset flag at midnight
-    if (now.hour == 0 && now.minute == 0) {
-      await p.setBool('punch_notif_sent_today', false);
-    }
-  });
-}
-
-// Helper (can't import from isolate, so inline)
-double LocationService_distanceKm(
-    double sLat, double sLng, double eLat, double eLng) {
-  final m = Geolocator.distanceBetween(sLat, sLng, eLat, eLng);
-  return m / 1000;
 }

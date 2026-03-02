@@ -191,7 +191,7 @@ packages:
     source: hosted
     version: "5.1.0"
   flutter_background_service_android:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_background_service_android
       sha256: ca0793d4cd19f1e194a130918401a3d0b1076c81236f7273458ae96987944a87
@@ -638,7 +638,7 @@ packages:
     source: hosted
     version: "0.7.7"
   timezone:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: timezone
       sha256: dd14a3b83cfd7cb19e7888f1cbc20f258b8d71b54c06f79ac585f14093a287d1
