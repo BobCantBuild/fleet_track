@@ -32,28 +32,35 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadState();
 
-    // ✅ Listen to background service km updates
+    // ✅ PRIMARY: Listen to background service 'update' events directly
     _bgSub = FlutterBackgroundService().on('update').listen((event) {
       if (event != null && mounted) {
-        final km = (event['totalKm'] as num).toDouble();
-        setState(() => _totalKm = km);
-        // Keep SharedPreferences in sync
-        SharedPreferences.getInstance()
-            .then((p) => p.setDouble('total_km', km));
+        final km = (event['totalKm'] as num?)?.toDouble() ?? _totalKm;
+        if (km != _totalKm) {
+          setState(() => _totalKm = km);
+          // Keep prefs in sync so _loadState also gets fresh value
+          SharedPreferences.getInstance()
+              .then((p) => p.setDouble('total_km', km));
+        }
       }
     });
 
-    // ✅ Refresh UI every 5 seconds from SharedPreferences
+    // ✅ SECONDARY: Poll SharedPreferences every 5s with reload()
+    // Catches km updated by background isolate when app was in background
     _uiTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      if (!mounted) return;
-      final p = await SharedPreferences.getInstance();
-      final km = p.getDouble('total_km') ?? 0.0;
-      if (mounted) setState(() => _totalKm = km);
+      if (!mounted || !_isPunchedIn) return;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload(); // ✅ Force fresh read from native storage
+      final km = prefs.getDouble('total_km') ?? _totalKm;
+      if (km != _totalKm && mounted) {
+        setState(() => _totalKm = km);
+      }
     });
   }
 
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); // ✅ Always reload before reading
     setState(() {
       _techName = prefs.getString('name') ?? '';
       _franchise = prefs.getString('franchise') ?? '';
@@ -139,22 +146,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final punchInTime = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
 
-    // ✅ Hard reset km to 0 for every new session
     await prefs.setBool('is_punched_in', true);
     await prefs.setBool('is_on_leave', false);
     await prefs.setString('session_id', sessionId);
-    await prefs.setDouble('total_km', 0.0);
+    await prefs.setDouble('total_km', 0.0); // ✅ Reset to 0 on new punch in
     await prefs.setString('punch_in_time', punchInTime.toIso8601String());
 
     setState(() {
       _isPunchedIn = true;
       _isOnLeave = false;
-      _totalKm = 0.0; // ✅ reset UI immediately
+      _totalKm = 0.0;
       _sessionId = sessionId;
       _punchInTime = punchInTime;
     });
 
-    // ✅ Cancel today's 10 AM reminder — auto reschedules tomorrow
     await NotificationService.cancelTodayReminderOnly();
 
     // Initial GPS write
@@ -180,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'status': 'active',
     });
 
-    // Clear any leave status
+    // Clear leave status
     await FirebaseFirestore.instance
         .collection(AppConstants.locationsCollection)
         .doc(_techId)
@@ -195,12 +200,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── PUNCH OUT ─────────────────────────────────────────────────────────────
   Future<void> _punchOut() async {
+    // ✅ Reload prefs to get the LATEST km from background service
     final prefs = await SharedPreferences.getInstance();
-    // ✅ Read latest km from prefs before stopping
-    final finalKm = prefs.getDouble('total_km') ?? _totalKm;
+    await prefs.reload();
+    final latestKm = prefs.getDouble('total_km') ?? _totalKm;
+    setState(() => _totalKm = latestKm);
 
     await prefs.setBool('is_punched_in', false);
-    await prefs.setDouble('total_km', finalKm);
+    await prefs.setDouble('total_km', latestKm);
 
     FlutterBackgroundService().invoke('stopService');
 
@@ -215,16 +222,13 @@ class _HomeScreenState extends State<HomeScreen> {
           .doc(_sessionId)
           .update({
         'punchOut': FieldValue.serverTimestamp(),
-        'totalKm': finalKm,
+        'totalKm': latestKm, // ✅ Save correct km on punch out
         'status': 'completed',
       });
     }
 
-    setState(() {
-      _isPunchedIn = false;
-      _totalKm = finalKm;
-    });
-    _showSnack('👋 Punched OUT. Total: ${finalKm.toStringAsFixed(2)} km');
+    setState(() => _isPunchedIn = false);
+    _showSnack('👋 Punched OUT. Total: ${latestKm.toStringAsFixed(2)} km');
   }
 
   // ── APPLY LEAVE ───────────────────────────────────────────────────────────
@@ -267,7 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _isPunchedIn = false;
     });
 
-    // ✅ Cancel today's 10 AM reminder
     await NotificationService.cancelTodayReminderOnly();
 
     await FirebaseFirestore.instance
@@ -420,7 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Identity card ─────────────────────────────────────────
+            // ── Identity card ──────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -464,32 +467,30 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── Stats row ─────────────────────────────────────────────
+            // ── Stats row ──────────────────────────────────────────────
             Row(
               children: [
                 Expanded(
-                  child: _StatCard(
-                    icon: Icons.directions_walk,
-                    label: 'Distance',
-                    // ✅ Shows live synced km
-                    value: '${_totalKm.toStringAsFixed(2)} km',
-                    color: Colors.green,
-                  ),
-                ),
+                    child: _StatCard(
+                  icon: Icons.directions_walk,
+                  label: 'Distance',
+                  // ✅ Show 2 decimal places for accuracy
+                  value: '${_totalKm.toStringAsFixed(2)} km',
+                  color: Colors.green,
+                )),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _StatCard(
-                    icon: Icons.timer,
-                    label: 'On Field',
-                    value: _formatDuration(),
-                    color: Colors.orange,
-                  ),
-                ),
+                    child: _StatCard(
+                  icon: Icons.timer,
+                  label: 'On Field',
+                  value: _formatDuration(),
+                  color: Colors.orange,
+                )),
               ],
             ),
             const SizedBox(height: 14),
 
-            // ── Status banner ─────────────────────────────────────────
+            // ── Status banner ──────────────────────────────────────────
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.all(16),
@@ -549,7 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const Spacer(),
 
-            // ── Punch IN ──────────────────────────────────────────────
+            // ── Punch IN ───────────────────────────────────────────────
             if (!_isPunchedIn && !_isOnLeave) ...[
               SizedBox(
                 height: 56,
@@ -569,8 +570,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-
-              // ── Apply Leave ────────────────────────────────────────
               SizedBox(
                 height: 50,
                 child: OutlinedButton.icon(
@@ -589,7 +588,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
 
-            // ── Punch OUT ─────────────────────────────────────────────
+            // ── Punch OUT ──────────────────────────────────────────────
             if (_isPunchedIn)
               SizedBox(
                 height: 56,
@@ -609,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-            // ── Cancel Leave ──────────────────────────────────────────
+            // ── Cancel Leave ───────────────────────────────────────────
             if (_isOnLeave)
               SizedBox(
                 height: 50,

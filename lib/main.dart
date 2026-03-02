@@ -9,12 +9,14 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // ✅ Init first — this requests notification + exact alarm permissions
+
   await NotificationService.init();
   await initBackgroundService();
+
   runApp(const FleetTrackApp());
 }
 
@@ -35,7 +37,6 @@ class FleetTrackApp extends StatelessWidget {
   }
 }
 
-// Decides whether to show LoginScreen or HomeScreen based on saved session
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
   @override
@@ -46,11 +47,14 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<SharedPreferences>(
-      future: SharedPreferences.getInstance(),
+      future: _loadPrefs(),
       builder: (ctx, snap) {
         if (!snap.hasData) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            backgroundColor: Color(0xFF0F172A),
+            body: Center(
+              child: CircularProgressIndicator(color: Colors.blue),
+            ),
           );
         }
         final prefs = snap.data!;
@@ -58,5 +62,12 @@ class _AuthGateState extends State<AuthGate> {
         return loggedIn ? const HomeScreen() : const LoginScreen();
       },
     );
+  }
+
+  // ✅ Always reload before auth check — avoids stale login state
+  Future<SharedPreferences> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    return prefs;
   }
 }
