@@ -46,8 +46,8 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<SharedPreferences>(
-      future: _loadPrefs(),
+    return FutureBuilder<_AuthState>(
+      future: _checkAuth(),
       builder: (ctx, snap) {
         if (!snap.hasData) {
           return const Scaffold(
@@ -57,17 +57,36 @@ class _AuthGateState extends State<AuthGate> {
             ),
           );
         }
-        final prefs = snap.data!;
-        final loggedIn = prefs.getBool('is_logged_in') ?? false;
-        return loggedIn ? const HomeScreen() : const LoginScreen();
+        // ✅ FIX #6 — Only go to HomeScreen if BOTH loggedIn AND techId exist
+        final auth = snap.data!;
+        if (auth.loggedIn && auth.techId.isNotEmpty) {
+          return const HomeScreen();
+        }
+        return const LoginScreen();
       },
     );
   }
 
-  // ✅ Always reload before auth check — avoids stale login state
-  Future<SharedPreferences> _loadPrefs() async {
+  Future<_AuthState> _checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.reload();
-    return prefs;
+    await prefs.reload(); // ✅ Always reload
+
+    final loggedIn = prefs.getBool('is_logged_in') ?? false;
+    final techId = prefs.getString('tech_id') ?? '';
+    final name = prefs.getString('name') ?? '';
+
+    // ✅ FIX #6 — If loggedIn but critical data missing → force re-login
+    if (loggedIn && (techId.isEmpty || name.isEmpty)) {
+      await prefs.clear();
+      return _AuthState(loggedIn: false, techId: '');
+    }
+
+    return _AuthState(loggedIn: loggedIn, techId: techId);
   }
+}
+
+class _AuthState {
+  final bool loggedIn;
+  final String techId;
+  const _AuthState({required this.loggedIn, required this.techId});
 }

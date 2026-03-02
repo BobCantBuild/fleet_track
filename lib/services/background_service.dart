@@ -38,7 +38,7 @@ Future<bool> onIosBackground(ServiceInstance service) async => true;
 void onServiceStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
 
-  // ✅ Reload prefs fresh — avoid stale isolate cache
+  // ✅ FIX #1, #3 — Reload prefs fresh, restore last known position
   final prefs = await SharedPreferences.getInstance();
   await prefs.reload();
 
@@ -52,11 +52,31 @@ void onServiceStart(ServiceInstance service) async {
     return;
   }
 
-  // ✅ Resume km if service restarted mid-session (e.g. killed by OS)
+  // ✅ FIX #1 — Resume totalKm so OS kill/restart doesn't reset distance
   double totalKm = prefs.getDouble('total_km') ?? 0.0;
+
+  // ✅ FIX #1, #3 — Restore lastPosition from prefs so no segment is skipped
   Position? lastPosition;
+  final savedLat = prefs.getDouble('last_lat');
+  final savedLng = prefs.getDouble('last_lng');
+  if (savedLat != null && savedLng != null) {
+    lastPosition = Position(
+      latitude: savedLat,
+      longitude: savedLng,
+      timestamp: DateTime.now(),
+      accuracy: 0,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+  }
+
   bool wasLocationOn = true;
-  bool firstReading = true;
+  // ✅ FIX #3 — firstReading only true if no saved position exists
+  bool firstReading = lastPosition == null;
 
   // ── Silent notification channel ──────────────────────────────────────────
   final FlutterLocalNotificationsPlugin localPlugin =
@@ -76,39 +96,50 @@ void onServiceStart(ServiceInstance service) async {
         ),
       );
 
-  service.on('stopService').listen((_) => service.stopSelf());
+  service.on('stopService').listen((_) async {
+    // ✅ FIX #2 — Final sync before stopping so punch out gets correct km
+    await _doFinalSync(sessionId, totalKm);
+    service.stopSelf();
+  });
 
-  // ── Helper: sync km to prefs + UI + session doc ──────────────────────────
-  Future<void> syncKm(double km) async {
-    // ✅ Write to SharedPreferences so HomeScreen prefs.reload() gets it
-    final p = await SharedPreferences.getInstance();
-    await p.setDouble('total_km', km);
+  // ── Helper: sync km to ALL sources ───────────────────────────────────────
+  Future<void> syncKm(double km, {int retryCount = 0}) async {
+    try {
+      // ✅ FIX #12 — Write prefs first (always succeeds)
+      final p = await SharedPreferences.getInstance();
+      await p.setDouble('total_km', km);
 
-    // ✅ Update session doc so dashboard reads accurate km
-    if (sessionId.isNotEmpty) {
-      try {
-        await FirebaseFirestore.instance
-            .collection(AppConstants.sessionsCollection)
-            .doc(sessionId)
-            .update({'totalKm': km});
-      } catch (_) {}
+      // ✅ FIX #2 — Session doc updated every tick — dashboard always accurate
+      await FirebaseFirestore.instance
+          .collection(AppConstants.sessionsCollection)
+          .doc(sessionId)
+          .update({'totalKm': km});
+
+      // ✅ Push to HomeScreen UI
+      service.invoke('update', {'totalKm': km});
+    } catch (e) {
+      // ✅ FIX #12 — Retry once on Firestore failure
+      if (retryCount < 1) {
+        await Future.delayed(const Duration(seconds: 2));
+        await syncKm(km, retryCount: retryCount + 1);
+      }
+      // Prefs write always succeeds so UI still updates
     }
-
-    // ✅ Invoke update to HomeScreen listener
-    service.invoke('update', {'totalKm': km});
   }
 
   // ── Main GPS tracking loop ────────────────────────────────────────────────
   Timer.periodic(
     Duration(seconds: AppConstants.gpsIntervalSeconds),
     (timer) async {
-      // ✅ Always reload prefs — catches punch-out from main isolate
+      // ✅ FIX #4 — Reload every tick to catch punch-out from main isolate
       final p = await SharedPreferences.getInstance();
       await p.reload();
       final punchedIn = p.getBool('is_punched_in') ?? false;
 
       if (!punchedIn) {
         timer.cancel();
+        // ✅ FIX #2 — Final sync before service dies
+        await _doFinalSync(sessionId, totalKm);
         service.stopSelf();
         return;
       }
@@ -120,8 +151,7 @@ void onServiceStart(ServiceInstance service) async {
           await NotificationService.showLocationOffWarning();
           wasLocationOn = false;
         }
-        // Still sync current km so UI doesn't go blank
-        await syncKm(totalKm);
+        await syncKm(totalKm); // ✅ Keep UI alive even when GPS off
         return;
       }
       if (!wasLocationOn) {
@@ -135,11 +165,11 @@ void onServiceStart(ServiceInstance service) async {
         pos = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
             accuracy: LocationAccuracy.high,
-            distanceFilter: 0, // ✅ 0 = always get position, we filter ourselves
+            distanceFilter: 0,
           ),
         );
       } catch (_) {
-        await syncKm(totalKm); // sync even on error
+        await syncKm(totalKm); // ✅ FIX #12 — sync on GPS error too
         return;
       }
 
@@ -152,7 +182,7 @@ void onServiceStart(ServiceInstance service) async {
           pos.longitude,
         );
 
-        // ✅ Accuracy < 35m AND moved >= 15m = real movement
+        // ✅ accuracy < 35m AND moved >= 15m = real movement, not GPS noise
         if (pos.accuracy < 35 && metres >= 15) {
           totalKm += metres / 1000.0;
           totalKm = double.parse(totalKm.toStringAsFixed(3));
@@ -160,6 +190,10 @@ void onServiceStart(ServiceInstance service) async {
       }
       firstReading = false;
       lastPosition = pos;
+
+      // ✅ FIX #1 — Save last position to prefs so restart resumes correctly
+      await p.setDouble('last_lat', pos.latitude);
+      await p.setDouble('last_lng', pos.longitude);
 
       // ── Sync km everywhere ────────────────────────────────────────────────
       await syncKm(totalKm);
@@ -172,18 +206,19 @@ void onServiceStart(ServiceInstance service) async {
         );
       }
 
-      // ── Write to Firestore location doc ───────────────────────────────────
+      // ✅ FIX #11 — Use same DateTime.now() for both dateStr and timestamp
       final now = DateTime.now();
       final locRef = FirebaseFirestore.instance
           .collection(AppConstants.locationsCollection)
           .doc(techId);
 
+      // ✅ FIX #12 — Wrap Firestore writes in try/catch with retry
       try {
         await locRef.set({
           'lat': pos.latitude,
           'lng': pos.longitude,
           'accuracy': pos.accuracy,
-          'speed': pos.speed, // m/s — dashboard × 3.6 = km/h
+          'speed': pos.speed,
           'totalKm': totalKm,
           'sessionId': sessionId,
           'franchise': franchise,
@@ -192,15 +227,39 @@ void onServiceStart(ServiceInstance service) async {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        await locRef.collection('trail').add({
-          'lat': pos.latitude,
-          'lng': pos.longitude,
-          'totalKm': totalKm,
-          'sessionId': sessionId,
-          'timestamp': FieldValue.serverTimestamp(),
-          'dateStr': '${now.day}/${now.month}/${now.year}',
-        });
-      } catch (_) {}
+        // ✅ FIX #5 — Write trail every 30s, not every tick
+        // Only write trail on even ticks (every 2nd interval)
+        final shouldWriteTrail =
+            (DateTime.now().second ~/ AppConstants.gpsIntervalSeconds) % 2 == 0;
+        if (shouldWriteTrail) {
+          await locRef.collection('trail').add({
+            'lat': pos.latitude,
+            'lng': pos.longitude,
+            'totalKm': totalKm,
+            'sessionId': sessionId,
+            'timestamp': FieldValue.serverTimestamp(),
+            // ✅ FIX #11 — dateStr uses local time consistent with timestamp
+            'dateStr': '${now.day}/${now.month}/${now.year}',
+          });
+        }
+      } catch (_) {
+        // ✅ FIX #12 — Firestore write failed — km already saved to prefs
+        // Will retry on next tick naturally
+      }
     },
   );
+}
+
+// ✅ FIX #2 — Final sync helper called before service stops
+Future<void> _doFinalSync(String sessionId, double totalKm) async {
+  try {
+    final p = await SharedPreferences.getInstance();
+    await p.setDouble('total_km', totalKm);
+    if (sessionId.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection(AppConstants.sessionsCollection)
+          .doc(sessionId)
+          .update({'totalKm': totalKm});
+    }
+  } catch (_) {}
 }

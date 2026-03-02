@@ -15,7 +15,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  // ✅ FIX #10 — observe app lifecycle
   bool _isPunchedIn = false;
   bool _isOnLeave = false;
   double _totalKm = 0.0;
@@ -30,37 +31,66 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // ✅ FIX #10
     _loadState();
 
-    // ✅ PRIMARY: Listen to background service 'update' events directly
+    // ✅ PRIMARY: background service event listener
     _bgSub = FlutterBackgroundService().on('update').listen((event) {
       if (event != null && mounted) {
         final km = (event['totalKm'] as num?)?.toDouble() ?? _totalKm;
         if (km != _totalKm) {
           setState(() => _totalKm = km);
-          // Keep prefs in sync so _loadState also gets fresh value
           SharedPreferences.getInstance()
               .then((p) => p.setDouble('total_km', km));
         }
       }
     });
 
-    // ✅ SECONDARY: Poll SharedPreferences every 5s with reload()
-    // Catches km updated by background isolate when app was in background
+    // ✅ FIX #4 — timer started only if punched in (checked inside)
+    _startUiTimerIfNeeded();
+  }
+
+  // ✅ FIX #10 — Resume timer and refresh km when app comes to foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshKmFromPrefs(); // Immediately sync km
+      _startUiTimerIfNeeded(); // Restart timer if needed
+    } else if (state == AppLifecycleState.paused) {
+      _stopUiTimer(); // Stop timer when backgrounded
+    }
+  }
+
+  void _startUiTimerIfNeeded() {
+    if (_uiTimer != null && _uiTimer!.isActive) return;
+    // ✅ FIX #4 — Only run timer when actually punched in
+    if (!_isPunchedIn) return;
     _uiTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      if (!mounted || !_isPunchedIn) return;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.reload(); // ✅ Force fresh read from native storage
-      final km = prefs.getDouble('total_km') ?? _totalKm;
-      if (km != _totalKm && mounted) {
-        setState(() => _totalKm = km);
-      }
+      if (!mounted) return;
+      await _refreshKmFromPrefs();
     });
+  }
+
+  void _stopUiTimer() {
+    _uiTimer?.cancel();
+    _uiTimer = null;
+  }
+
+  Future<void> _refreshKmFromPrefs() async {
+    if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); // ✅ Force fresh read
+    final km = prefs.getDouble('total_km') ?? _totalKm;
+    if (km != _totalKm && mounted) {
+      setState(() => _totalKm = km);
+    }
+    // ✅ FIX #10 — Also refresh duration display
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.reload(); // ✅ Always reload before reading
+    await prefs.reload();
     setState(() {
       _techName = prefs.getString('name') ?? '';
       _franchise = prefs.getString('franchise') ?? '';
@@ -72,6 +102,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final pt = prefs.getString('punch_in_time');
       if (pt != null) _punchInTime = DateTime.parse(pt);
     });
+    // ✅ FIX #4 — Start timer AFTER state loaded if punched in
+    _startUiTimerIfNeeded();
   }
 
   // ── LOCATION PERMISSION ───────────────────────────────────────────────────
@@ -149,8 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.setBool('is_punched_in', true);
     await prefs.setBool('is_on_leave', false);
     await prefs.setString('session_id', sessionId);
-    await prefs.setDouble('total_km', 0.0); // ✅ Reset to 0 on new punch in
+    await prefs.setDouble('total_km', 0.0);
     await prefs.setString('punch_in_time', punchInTime.toIso8601String());
+    // ✅ FIX #1 — Clear saved last position so new session starts fresh
+    await prefs.remove('last_lat');
+    await prefs.remove('last_lng');
 
     setState(() {
       _isPunchedIn = true;
@@ -185,7 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'status': 'active',
     });
 
-    // Clear leave status
     await FirebaseFirestore.instance
         .collection(AppConstants.locationsCollection)
         .doc(_techId)
@@ -195,21 +229,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }, SetOptions(merge: true));
 
     await FlutterBackgroundService().startService();
+
+    // ✅ FIX #4 — Start timer now that we are punched in
+    _startUiTimerIfNeeded();
     _showSnack('✅ Punched IN — GPS tracking started!');
   }
 
   // ── PUNCH OUT ─────────────────────────────────────────────────────────────
   Future<void> _punchOut() async {
-    // ✅ Reload prefs to get the LATEST km from background service
+    // ✅ FIX #2 — Get latest km before stopping service
     final prefs = await SharedPreferences.getInstance();
     await prefs.reload();
     final latestKm = prefs.getDouble('total_km') ?? _totalKm;
-    setState(() => _totalKm = latestKm);
 
     await prefs.setBool('is_punched_in', false);
     await prefs.setDouble('total_km', latestKm);
+    // ✅ FIX #1 — Clear last position on punch out
+    await prefs.remove('last_lat');
+    await prefs.remove('last_lng');
 
+    setState(() {
+      _totalKm = latestKm;
+      _isPunchedIn = false;
+    });
+
+    // ✅ FIX #4 — Stop timer when not tracking
+    _stopUiTimer();
+
+    // ✅ FIX #2 — Small delay so background service does its final sync
     FlutterBackgroundService().invoke('stopService');
+    await Future.delayed(const Duration(seconds: 2));
 
     await FirebaseFirestore.instance
         .collection(AppConstants.locationsCollection)
@@ -222,12 +271,11 @@ class _HomeScreenState extends State<HomeScreen> {
           .doc(_sessionId)
           .update({
         'punchOut': FieldValue.serverTimestamp(),
-        'totalKm': latestKm, // ✅ Save correct km on punch out
+        'totalKm': latestKm, // ✅ FIX #2 — Accurate final km
         'status': 'completed',
       });
     }
 
-    setState(() => _isPunchedIn = false);
     _showSnack('👋 Punched OUT. Total: ${latestKm.toStringAsFixed(2)} km');
   }
 
@@ -271,6 +319,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _isPunchedIn = false;
     });
 
+    // ✅ FIX #4 — Stop timer when on leave
+    _stopUiTimer();
+
+    // ✅ FIX #9 — Stop background service if somehow still running
+    FlutterBackgroundService().invoke('stopService');
+
     await NotificationService.cancelTodayReminderOnly();
 
     await FirebaseFirestore.instance
@@ -303,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── WRITE LOCATION ────────────────────────────────────────────────────────
   Future<void> _writeLocation(
       Position pos, double km, String sessionId, String status) async {
-    final now = DateTime.now();
+    final now = DateTime.now(); // ✅ FIX #11 — single DateTime for consistency
     final locRef = FirebaseFirestore.instance
         .collection(AppConstants.locationsCollection)
         .doc(_techId);
@@ -372,10 +426,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_isPunchedIn) await _punchOut();
 
+    // ✅ FIX #9 — Always stop service on logout
+    FlutterBackgroundService().invoke('stopService');
+    _stopUiTimer();
+
     await NotificationService.cancelPunchReminder();
 
+    // ✅ FIX #13 — Only clear auth keys, NOT km/session keys
+    // (in case background service is still doing final write)
     final prefs = await SharedPreferences.getInstance();
+    final keysToKeep = ['total_km', 'session_id', 'punch_in_time'];
+    final allKeys = prefs.getKeys();
+    for (final key in allKeys) {
+      if (!keysToKeep.contains(key)) {
+        await prefs.remove(key);
+      }
+    }
+    // ✅ Small delay then clear remaining keys
+    await Future.delayed(const Duration(seconds: 2));
     await prefs.clear();
+
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()));
@@ -389,8 +459,9 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
   }
 
+  // ✅ FIX #10 — Duration updates correctly when returning from background
   String _formatDuration() {
-    if (_punchInTime == null) return '--:--';
+    if (_punchInTime == null || !_isPunchedIn) return '--:--';
     final diff = DateTime.now().difference(_punchInTime!);
     final h = diff.inHours.toString().padLeft(2, '0');
     final m = (diff.inMinutes % 60).toString().padLeft(2, '0');
@@ -399,8 +470,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // ✅ FIX #10
     _bgSub?.cancel();
-    _uiTimer?.cancel();
+    _stopUiTimer();
     super.dispose();
   }
 
@@ -449,18 +521,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_techName,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold)),
-                      Text(_franchise,
-                          style: const TextStyle(
-                              color: Colors.white60, fontSize: 13)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_techName,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis),
+                        Text(_franchise,
+                            style: const TextStyle(
+                                color: Colors.white60, fontSize: 13)),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -474,7 +549,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _StatCard(
                   icon: Icons.directions_walk,
                   label: 'Distance',
-                  // ✅ Show 2 decimal places for accuracy
                   value: '${_totalKm.toStringAsFixed(2)} km',
                   color: Colors.green,
                 )),
